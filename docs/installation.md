@@ -6,11 +6,6 @@ Use PHP 8.3+, Laravel 12, Composer, and the fileinfo/mbstring/ZIP/DOM/XML extens
 composer require nexus-smart-solutions/laravel-import-export
 ```
 
-To try the package in a host without publishing it, add a Composer path repository to the host:
-
-```json
-{"repositories":[{"type":"path","url":"../nexus-enterprise-import-export","options":{"symlink":true}}]}
-```
 
 Then run `composer require nexus/enterprise-import-export:@dev`. Composer discovers ImportExportServiceProvider. Publish configuration:
 
