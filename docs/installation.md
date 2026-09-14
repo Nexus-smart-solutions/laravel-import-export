@@ -3,11 +3,7 @@
 Use PHP 8.3+, Laravel 12, Composer, and the fileinfo/mbstring/ZIP/DOM/XML extensions required by the streaming reader/writer. In this repository:
 
 ```bash
-composer install
-composer test
-composer analyse
-composer format:check
-composer validate --strict
+composer require nexus-smart-solutions/laravel-import-export
 ```
 
 To try the package in a host without publishing it, add a Composer path repository to the host:
