@@ -1,0 +1,85 @@
+ M README.md
+ M composer.json
+ M config/bulk-imports.php
+ M docs/VERIFICATION.md
+ M src/BulkImportServiceProvider.php
+ M src/Console/CleanupImportsCommand.php
+ M src/Data/ResolvedReferences.php
+ M src/Data/RowFailure.php
+ M src/Data/SourceRow.php
+ M src/Definitions/EloquentTarget.php
+ M src/Definitions/ImportDefinition.php
+ M src/Exceptions/AtomicCommitRejected.php
+ M src/Exceptions/DuplicateImportException.php
+ M src/Exceptions/RejectRow.php
+ M src/Http/Controllers/ImportController.php
+ M src/Http/Resources/ImportFailureResource.php
+ M src/Http/Resources/ImportResource.php
+ M src/Jobs/FinalizeImportJob.php
+ M src/Jobs/PrepareImportJob.php
+ M src/Models/Import.php
+ M src/Models/ImportChunk.php
+ M src/Models/ImportFailure.php
+ M src/Models/ImportRowKey.php
+ M src/Models/ImportStagedRow.php
+ M src/Readers/CsvReader.php
+ M src/Readers/XlsxReader.php
+ M src/Readers/XlsxSecurityInspector.php
+ M src/Services/ActorImportAuthorizer.php
+ M src/Services/BusinessKeyLockManager.php
+ M src/Services/ChunkCompletion.php
+ M src/Services/ChunkFileStore.php
+ M src/Services/ChunkProcessor.php
+ M src/Services/EloquentAtomicCommitter.php
+ M src/Services/ErrorReportGenerator.php
+ M src/Services/FailureRedactor.php
+ M src/Services/FinalizeImport.php
+ M src/Services/ImportDispatcher.php
+ M src/Services/ImportFingerprint.php
+ M src/Services/PrepareImport.php
+ M src/Services/ReferenceResolver.php
+ M src/Services/RowFailureRecorder.php
+ M src/Services/StoredFileIntegrityVerifier.php
+ M src/State/ImportStateMachine.php
+ M tests/Large/FiftyThousandStudentsTest.php
+ M tests/Support/TestUser.php
+ M tests/TestCase.php
+?? STATUS.md
+?? build/
+?? config/import-export.php
+?? database/migrations/2026_09_05_000001_add_import_statistics.php
+?? database/migrations/2026_09_05_000002_create_exports.php
+?? database/migrations/2026_09_05_000003_add_failure_locations.php
+?? docs/authorization.md
+?? docs/notifications.md
+?? docs/repository-review.md
+?? examples/Enterprise/
+?? phpstan.neon
+?? routes/import-export.php
+?? src/Console/MaintainExportsCommand.php
+?? src/Contracts/CurrentContext.php
+?? src/Contracts/OptionsProvider.php
+?? src/Definitions/DataDefinition.php
+?? src/Enums/ExportStatus.php
+?? src/Enums/FailureType.php
+?? src/Enums/OptionInput.php
+?? src/Enums/RelationMissingStrategy.php
+?? src/Events/ExportChanged.php
+?? src/ExportManager.php
+?? src/Exports/
+?? src/Fields/
+?? src/Http/Controllers/DataController.php
+?? src/ImportManager.php
+?? src/Jobs/ProcessExportJob.php
+?? src/Models/Export.php
+?? src/Models/ExportPart.php
+?? src/Services/DataAccess.php
+?? src/Services/DataDescription.php
+?? src/Services/EmptyCurrentContext.php
+?? src/Support/Header.php
+?? src/TemplateManager.php
+?? src/Templates/
+?? src/Writers/
+?? tests/Enterprise/
+?? tools/
+?? verification/

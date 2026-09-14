@@ -1,0 +1,14 @@
+{
+  "documents_reviewed": 49,
+  "broken_local_links": [],
+  "normal_test_command": "php vendor/bin/phpunit --exclude-group performance --log-junit verification/phpunit.xml",
+  "benchmarks_rerun": false,
+  "corrections": [
+    "Recovery command is bulk-imports:recover-stale",
+    "Date/numeric conversion documented against Field implementation",
+    "templateUsing is an alias of importBy",
+    "Normal release checks exclude opt-in performance group",
+    "Current completed benchmark evidence documented; interrupted 1M log not counted",
+    "Canonical architecture page avoids case-insensitive duplicate path"
+  ]
+}

@@ -1,0 +1,3373 @@
+diff --git a/LICENSE.md b/LICENSE.md
+index 260834d..59b01c5 100644
+--- a/LICENSE.md
++++ b/LICENSE.md
+@@ -1,21 +1,52 @@
+-MIT License
+-
+-Copyright (c) 2026 Nexus Solutions
+-
+-Permission is hereby granted, free of charge, to any person obtaining a copy
+-of this software and associated documentation files (the "Software"), to deal
+-in the Software without restriction, including without limitation the rights
+-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-copies of the Software, and to permit persons to whom the Software is
+-furnished to do so, subject to the following conditions:
+-
+-The above copyright notice and this permission notice shall be included in all
+-copies or substantial portions of the Software.
+-
+-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-SOFTWARE.
++Nexus Smart Solutions Proprietary Software License
++
++Copyright © 2026 Nexus Smart Solutions.
++All Rights Reserved.
++
++1. Ownership
++
++This package and its associated source code and documentation (the "Software")
++are proprietary software owned by Nexus Smart Solutions, except for third-party
++components that remain subject to their respective ownership and licenses.
++All rights in the Software owned by Nexus Smart Solutions are reserved.
++
++2. Authorized use
++
++Use, copying, or modification of the Software is permitted only under a valid
++written or commercial license issued by Nexus Smart Solutions and only within
++the scope of that license. Possession of the Software or access to its source
++code does not itself grant a license or transfer ownership.
++
++Integration into client applications is permitted only for applications and
++uses authorized by that license. Such integration does not grant a right to
++sell, sublicense, disclose, or redistribute the Software as a standalone
++package, library, or competing product.
++
++3. Restrictions
++
++Without prior written permission from Nexus Smart Solutions, you may not:
++
++- Redistribute, transfer, or commercially distribute the Software, in whole or
++  in part, beyond the scope of an expressly authorized license.
++- Sell, resell, sublicense, rent, or lease the Software as a standalone package
++  or library.
++- Publish or publicly disclose the Software's source code, including through
++  public repositories, package registries, or other public distribution channels.
++- Relicense the Software under another license, including an open-source license.
++- Remove, alter, or obscure copyright, ownership, or license notices.
++- Use the Software or its source code to create or distribute a competing
++  standalone package or library.
++
++4. Third-party components
++
++Third-party dependencies and components retain their respective licenses and
++copyright notices. This license does not replace those licenses, restrict rights
++granted by their respective owners, or claim ownership of third-party code.
++You must comply with the applicable third-party license terms.
++
++5. Written authorization
++
++Any exception to these restrictions requires explicit written authorization
++from Nexus Smart Solutions. No additional rights are granted by implication.
++A separate written agreement with Nexus Smart Solutions may specify the scope
++of authorized use and any additional rights or obligations.
+diff --git a/README.md b/README.md
+index cd370aa..cc63dff 100644
+--- a/README.md
++++ b/README.md
+@@ -1,284 +1,55 @@
+-# Nexus Async Bulk Imports
++# Nexus Enterprise Import / Export
+ 
+-A source-agnostic, queue-first bulk import engine for PHP 8.4 and Laravel 12. It accepts an upload quickly, prepares bounded JSONL chunks on Laravel Filesystem, processes those chunks through Laravel Job Batches, and exposes durable progress, row failures, cancellation, retry, authorization hooks, and CSV error reports.
+-
+-This is an import engine, not an Excel wrapper. CSV and XLSX are built-in readers behind `SourceReader`; additional sources can be registered without changing orchestration, validation, writes, or reporting.
+-
+-## Requirements
+-
+-- PHP 8.4+
+-- Laravel 12+
+-- A Laravel queue backend and running workers
+-- Laravel's `job_batches` table
+-- A shared Laravel Filesystem disk when web and worker processes run on different servers
+-- A database unique constraint for every imported business key
+-- PHP `zip` for XLSX
+-
+-## Install
+-
+-```bash
+-composer require nexus/enterprise-import-export
+-php artisan queue:batches-table
+-php artisan vendor:publish --tag=bulk-imports-config
+-php artisan vendor:publish --tag=bulk-imports-migrations
+-php artisan migrate
+-```
+-
+-Select a queue and a shared disk in `config/bulk-imports.php`. Configure the queue connection's `retry_after` / SQS visibility timeout above the largest lease (960 seconds by default; the atomic finalizer timeout is 900). Leases are deliberately a little longer than their corresponding job timeout.
+-
+-The package rejects Laravel's `sync` queue by default because it would move row parsing back into the upload request. `queue.allow_sync` exists only for tests and controlled local diagnostics.
+-
+-```bash
+-php artisan queue:work --queue=imports --timeout=900 --tries=3
+-```
+-
+-Recommended scheduler entries:
+-
+-```php
+-use Illuminate\Support\Facades\Schedule;
+-
+-Schedule::command('bulk-imports:recover-stale')->everyFiveMinutes()->withoutOverlapping();
+-Schedule::command('bulk-imports:cleanup')->daily()->withoutOverlapping();
+-```
+-
+-## Define an import
+-
+-```php
+-namespace App\Imports;
+-
+-use App\Models\Course;
+-use App\Models\Student;
+-use Nexus\ImportExport\Data\ImportContext;
+-use Nexus\ImportExport\Data\ResolvedReferences;
+-use Nexus\ImportExport\Definitions\EloquentTarget;
+-use Nexus\ImportExport\Definitions\ImportDefinition;
+-use Nexus\ImportExport\Definitions\Reference;
+-use Nexus\ImportExport\Enums\DuplicateStrategy;
+-use Nexus\ImportExport\Enums\ImportMode;
+-
+-final class StudentsImport extends ImportDefinition
+-{
+-    public function columns(): array
+-    {
+-        return ['student_code', 'name', 'email', 'phone', 'date_of_birth', 'course_code'];
+-    }
+-
+-    public function rules(): array
+-    {
+-        return [
+-            'student_code' => ['required', 'string', 'max:50'],
+-            'name' => ['required', 'string', 'max:255'],
+-            'email' => ['required', 'email:rfc'],
+-            'phone' => ['nullable', 'string'],
+-            'date_of_birth' => ['nullable', 'date'],
+-            'course_code' => ['required', 'string'],
+-        ];
+-    }
+-
+-    public function uniqueBy(): array
+-    {
+-        return ['student_code'];
+-    }
+-
+-    public function mode(): ImportMode
+-    {
+-        return ImportMode::PARTIAL;
+-    }
+-
+-    public function duplicateStrategy(): DuplicateStrategy
+-    {
+-        return DuplicateStrategy::UPSERT;
+-    }
+-
+-    public function target(): EloquentTarget
+-    {
+-        return EloquentTarget::for(Student::class, [
+-            'name', 'email', 'phone', 'date_of_birth', 'course_id', 'updated_at',
+-        ]);
+-    }
+-
+-    public function references(): array
+-    {
+-        return [
+-            Reference::make('courses', Course::class, 'course_code', 'code')
+-                ->value('id')
+-                ->select(['id', 'code'])
+-                ->missing('course_not_found', 'The course code does not exist.'),
+-        ];
+-    }
+-
+-    public function transform(array $row, ResolvedReferences $references, ImportContext $context): array
+-    {
+-        $row['course_id'] = $references->get('courses', $row['course_code']);
+-        $row['date_of_birth'] = filled($row['date_of_birth'])
+-            ? \Carbon\CarbonImmutable::parse($row['date_of_birth'])->format('Y-m-d')
+-            : null;
+-        unset($row['course_code']);
+-
+-        return $row;
+-    }
+-}
+-```
+-
+-The host table must enforce the business key:
+-
+-```php
+-$table->string('student_code')->unique();
+-```
+-
+-Register only trusted definition classes. Request input is a type key, never an executable class name.
+-
+-```php
+-// config/bulk-imports.php
+-'definitions' => [
+-    'students' => App\Imports\StudentsImport::class,
+-],
+-```
+-
+-## Dispatch
+-
+-```php
+-use Nexus\ImportExport\Facades\BulkImport;
+-
+-$import = BulkImport::make(StudentsImport::class)
+-    ->file($request->file('file'))
+-    ->by($request->user())
+-    ->context(['organization_id' => $organization->id])
+-    ->options(['chunk_size' => 1000])
+-    ->dispatch();
+-
+-return response()->json([
+-    'data' => ['id' => $import->id, 'status' => $import->status->value],
+-], 202);
+-```
+-
+-The request validates and stores the file, inserts the `imports` row, and queues preparation. It does not parse 50,000 business rows.
+-
+-## Duplicate strategies
+-
+-| Strategy | Existing key | Missing key |
+-| --- | --- | --- |
+-| `ERROR` | row failure | insert |
+-| `SKIP` | count as skipped | insert |
+-| `UPDATE` | update | count as skipped |
+-| `UPSERT` | update | insert |
+-
+-`EloquentTarget` performs one or a small bounded number of existing-key queries per chunk and uses database insert/upsert operations. Database uniqueness remains mandatory. Package-managed imports that touch the same key are serialized by transaction-scoped key rows.
+-
+-## Atomic imports
+-
+-Atomic mode is explicit and honest:
+-
+-```php
+-public function mode(): ImportMode
+-{
+-    return ImportMode::ATOMIC;
+-}
+-
+-public function atomicCommitter(): AtomicCommitter
+-{
+-    return app(EloquentAtomicCommitter::class);
+-}
+-```
+-
+-Chunk workers validate and stage; they do not write production rows. If every row passes, the finalizer merges all staged rows and changes the import status in one database transaction. For very large datasets, that final transaction can be expensive. A domain-specific `AtomicCommitter` can use a native staging table, stored procedure, partition swap, or database bulk loader.
+-
+-## Optional API
+-
+-Enable routes:
+-
+-```php
+-'routes' => [
+-    'enabled' => true,
+-    'prefix' => 'api/imports',
+-    'middleware' => ['api', 'auth'],
+-],
+-```
+-
+-Routes:
+-
+-- `POST /api/imports`
+-- `GET /api/imports`
+-- `GET /api/imports/{import}`
+-- `GET /api/imports/{import}/failures`
+-- `POST /api/imports/{import}/cancel`
+-- `POST /api/imports/{import}/retry`
+-- `GET /api/imports/{import}/errors/download`
+-- `GET /api/imports/templates/{type}`
+-
+-The default `ActorImportAuthorizer` scopes list and read operations to `actor_type + actor_id`; changing an ID cannot expose another actor's import. Bind `ImportAuthorizer` for organization roles or support users.
+-
+-## Multi-tenancy
+-
+-The package has no dependency on Stancl or Spatie tenancy. Context is restricted to configured scalar keys, stored on the import, and copied into every queue payload. Bind `ContextRestorer`:
++A PHP 8.4 / Laravel 12 package extending `nexus/enterprise-import-export` with one metadata-driven `DataDefinition` for imports, exports and spreadsheet templates. Existing chunked imports, exports and template writers are retained.
+ 
+ ```php
+-final class StanclContextRestorer implements \Nexus\ImportExport\Contracts\ContextRestorer
+-{
+-    public function run(array $context, \Closure $callback): mixed
+-    {
+-        $tenant = \App\Models\Tenant::query()->findOrFail($context['tenant_id']);
+-        tenancy()->initialize($tenant);
++use Nexus\ImportExport\Fields\RelationField;
+ 
+-        try {
+-            return $callback();
+-        } finally {
+-            tenancy()->end();
+-        }
+-    }
+-}
++RelationField::make('school')->column('school_id')
++    ->excelColumn('School')->exportColumn('School Name')
++    ->belongsTo('school', School::class)
++    ->importBy('code')->storeUsing('id')->exportUsing('name')
++    ->templateUsing('code')->codeAndLabel('name')->dropdown()
++    ->required()->exportable();
+ ```
+ 
+-Then bind the implementation in package config. Do not put credentials, tokens, or request objects in context/options.
++| Excel value | Lookup | Stored value | Export value |
++| --- | --- | --- | --- |
++| SCH001 - Future Language School | schools.code = SCH001 | students.school_id = 17 | Future Language School |
+ 
+-For a shared database where the file key is `student_code` but the real constraint is tenant-scoped, keep `uniqueBy()` as the source key and declare the post-transform target key:
++Register your definition in `config/bulk-imports.php`, then:
+ 
+ ```php
+-public function targetUniqueBy(): array
+-{
+-    return ['organization_id', 'student_code'];
+-}
++use Nexus\ImportExport\{ImportManager, ExportManager, TemplateManager};
+ 
+-public function transform(array $row, ResolvedReferences $references, ImportContext $context): array
+-{
+-    $row['organization_id'] = $context->contextValue('organization_id');
+-    // Resolve/map the remaining target fields...
+-    return $row;
+-}
++$template = app(TemplateManager::class)->download('students', $request->user());
++$import = app(ImportManager::class)->dispatch('students', $request->file('file'), $request->user());
++$export = app(ExportManager::class)->dispatch('students', $request->user(), [
++    'format' => 'xlsx', 'fields' => ['student_code', 'name', 'school'],
++]);
++$updateFile = app(TemplateManager::class)->withData('students', $request->user());
+ ```
+ 
+-The host unique index and `EloquentTarget` upsert must then use `(organization_id, student_code)`; the engine verifies that transformed rows retain both fields.
+-
+-If metadata is central while business rows are tenant-scoped, also bind an `ImportAuthorizer` that scopes by tenant—not only actor—and use a domain idempotent writer because two database connections cannot share the default transaction. For database-per-tenant package tables, invoke cleanup/recovery once inside each tenant context.
++Imports stream into checksummed JSONL chunks and Laravel Bus batches; business writes, receipt and counters commit together. Exports use durable keyset pages, immutable parts and revision fencing. CSV/XLSX processing is bounded by configured chunks; large XLSX exports split sheets automatically. Templates include instructions and bounded option/relation dropdowns. Definitions whitelist fields, aliases, options, validation, normalization and relations.
+ 
+-## Events
++Backend access defaults to the creator. Guest access is explicitly enabled per package and definition, using expiring, revocable 256-bit bearer tokens stored as hashes. Tenancy is optional. `SystemPrincipal` supports scheduled/CLI jobs with a stable owner. Optional notifications resolve the stored creator or a verified guest/server recipient. Notification delivery or broker failures do not change a successful import/export into a failure.
+ 
+-The package emits `ImportCreated`, `ImportQueued`, `ImportStarted`, `ImportChunkStarted`, `ImportChunkCompleted`, `ImportChunkFailed`, `ImportProgressUpdated`, `ImportCompleted`, `ImportCompletedWithErrors`, `ImportFailed`, and `ImportCancelled`. It intentionally sends no email, websocket, Slack, or product notification.
+-
+-## Operations
++Start with [installation](docs/installation.md), [quick start](docs/quick-start.md), and the complete [StudentDefinition](examples/Enterprise/Definitions/StudentDefinition.php). [Product](examples/Enterprise/Definitions/ProductDefinition.php) and [Employee](examples/Enterprise/Definitions/EmployeeDefinition.php) definitions demonstrate reuse. The [documentation index](docs/index.md) covers access, relationships, queues and deployment.
+ 
+ ```bash
+-php artisan bulk-imports:recover-stale
+-php artisan bulk-imports:cleanup --dry-run
+-php artisan bulk-imports:cleanup
++composer install
++composer test
++composer analyse
++composer format:check
++composer validate --strict
+ ```
+ 
+-`recover-stale` redispatches expired preparation, batch-dispatch, chunk, and finalization leases after a hard worker/server failure. `cleanup` applies source/chunk, report, and persisted failure-record retention independently. A failed import is no longer retryable after its retained source/chunks are cleaned.
+-
+-## Demo and tests
++Executed results and environment limits are in [verification](docs/VERIFICATION.md) and [performance](docs/performance.md); raw logs/results and the benchmark source are included. Native MySQL/PostgreSQL, Redis/Horizon and S3 deployment still need host-specific validation. Generic pivot/child-sheet synchronization and generic million-row atomic publication remain outside scope. See [limitations](docs/limitations.md).
+ 
+-The complete student demo is in `examples/`. Generate the deterministic 50,000-row XLSX without committing a large binary (or use a `.csv` output name for the CSV adapter):
++## Proprietary license
+ 
+-```bash
+-php examples/generate_students_fixture.php /tmp/students-50000.xlsx 50000
+-php examples/generate_students_fixture.php /tmp/students-50000.csv 50000
+-```
++Copyright © 2026 Nexus Smart Solutions. All Rights Reserved.
+ 
+-Run normal tests and the opt-in large fixture test:
+-
+-```bash
+-composer test
+-composer test:large
+-```
++This package is proprietary software owned by Nexus Smart Solutions. Use is permitted only under a valid written or commercial license from Nexus Smart Solutions and within that license's scope. Redistribution, sublicensing, public source disclosure, resale, or relicensing requires prior written permission from Nexus Smart Solutions. Authorized integration into client applications does not grant permission to redistribute or sell this package separately.
+ 
+-Read [Architecture](docs/ARCHITECTURE.md), [Implementation Walkthrough](docs/IMPLEMENTATION_WALKTHROUGH.md), [Decisions](docs/DECISIONS.md), [Public API](docs/PUBLIC_API.md), and [Verification](docs/VERIFICATION.md) before production integration.
++See [LICENSE.md](LICENSE.md) for the full terms. Third-party dependencies retain their respective licenses; their terms are not replaced by this package's proprietary license.
+diff --git a/composer.json b/composer.json
+index 3cd332f..6b41f1b 100644
+--- a/composer.json
++++ b/composer.json
+@@ -1,6 +1,6 @@
+ {
+     "name": "nexus/enterprise-import-export",
+-    "description": "A queue-first, source-agnostic bulk import engine for Laravel.",
++    "description": "Metadata-driven, queue-first Laravel imports, exports, and spreadsheet templates.",
+     "keywords": [
+         "laravel",
+         "imports",
+@@ -9,7 +9,7 @@
+         "csv",
+         "bulk"
+     ],
+-    "license": "MIT",
++    "license": "proprietary",
+     "type": "library",
+     "require": {
+         "php": "^8.4",
+@@ -28,12 +28,16 @@
+         "illuminate/routing": "^12.0",
+         "illuminate/support": "^12.0",
+         "illuminate/validation": "^12.0",
+-        "openspout/openspout": "^5.0"
++        "openspout/openspout": "^5.0",
++        "ext-dom": "*",
++        "illuminate/notifications": "^12.0"
+     },
+     "require-dev": {
+         "laravel/pint": "^1.24",
+         "orchestra/testbench": "^10.0",
+-        "phpunit/phpunit": "^11.5"
++        "phpunit/phpunit": "^11.5",
++        "larastan/larastan": "^3.0",
++        "phpstan/phpstan": "^2.1"
+     },
+     "autoload": {
+         "psr-4": {
+@@ -57,14 +61,16 @@
+         }
+     },
+     "scripts": {
+-        "test": "phpunit --exclude-group large",
+-        "test:large": "phpunit --group large",
++        "test": "phpunit --exclude-group performance",
++        "test:large": "phpunit --group performance",
+         "format": "pint",
+         "format:check": "pint --test",
+         "check": [
+             "@format:check",
++            "@analyse",
+             "@test"
+-        ]
++        ],
++        "analyse": "phpstan analyse --memory-limit=512M"
+     },
+     "config": {
+         "sort-packages": true,
+diff --git a/config/bulk-imports.php b/config/bulk-imports.php
+index 04066dd..25104b3 100644
+--- a/config/bulk-imports.php
++++ b/config/bulk-imports.php
+@@ -68,14 +68,15 @@ return [
+     ],
+ 
+     'limits' => [
+-        'max_file_size_kb' => 102400,
+-        'max_rows' => 1000000,
++        'max_file_size_kb' => 1048576,
++        'max_rows' => 10000000,
++        'max_csv_record_bytes' => 2097152,
+         'min_chunk_size' => 1,
+         'max_chunk_size' => 5000,
+         'max_columns' => 250,
+         'max_cell_length' => 65535,
+         'xlsx_max_compression_ratio' => 100,
+-        'xlsx_max_uncompressed_bytes' => 536870912,
++        'xlsx_max_uncompressed_bytes' => 4294967296,
+         'xlsx_max_archive_entries' => 10000,
+     ],
+ 
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+deleted file mode 100644
+index 6f9766b..0000000
+--- a/docs/ARCHITECTURE.md
++++ /dev/null
+@@ -1,269 +0,0 @@
+-# Architecture
+-
+-## 1. Purpose and boundaries
+-
+-The package is an asynchronous bulk-import engine. Its responsibility begins with accepting a trusted import definition plus an uploaded tabular source and ends with a durable terminal import state and, when needed, a downloadable failure report.
+-
+-It owns orchestration, source adapters, chunk preparation, row validation, batched references, duplicate policy, retry safety, progress, staging, error persistence, and optional HTTP endpoints. It does not own authentication, tenant discovery, business notifications, or the host application's business schema.
+-
+-The current workspace contained no existing repository, Composer manifest, framework conventions, or reusable infrastructure. The implementation is therefore a standalone Laravel package rather than a parallel subsystem inside an unknown application.
+-
+-## 2. Runtime topology
+-
+-```mermaid
+-flowchart TD
+-    A["Web request"] --> B["Shared Filesystem"]
+-    A --> C["Import metadata DB"]
+-    C --> D["Prepare worker"]
+-    D --> B
+-    D --> E["Laravel Job Batch"]
+-    E --> F["Concurrent chunk workers"]
+-    F --> G["Business DB"]
+-    F --> C
+-    E --> H["Finalizer"]
+-    H --> G
+-    H --> C
+-```
+-
+-The web server and workers may be different machines. Source files, prepared JSONL chunks, and reports therefore use Laravel Filesystem rather than local absolute paths. For S3/MinIO, the preparation worker materializes XLSX into a temporary local file only while OpenSpout streams it; chunk workers never depend on that worker's local disk.
+-
+-The sync queue driver is rejected by default. Enabling it is an explicit test-only escape hatch because a sync connection would violate the HTTP boundary by running preparation inline.
+-
+-## 3. End-to-end flow
+-
+-1. `ImportDispatcher` runs fast upload checks, calculates SHA-256, normalizes context/options, calculates a fingerprint, and applies import-level idempotency.
+-2. It writes the upload to the configured disk, inserts an `imports` row as `uploaded`, transitions it to `queued`, emits events, dispatches `PrepareImportJob`, and returns.
+-3. `PrepareImportJob` restores tenant/application context before loading the import, obtains a database lease, and calls `PrepareImport`.
+-4. The stored object is streamed once to verify it still matches the accepted upload SHA-256. `ReaderRegistry` then selects a `SourceReader`. `CsvReader` streams the object; `XlsxReader` uses OpenSpout with a temporary local materialization and ZIP-bomb checks.
+-5. The header is validated independently from rows. `PrepareImport` streams rows, normalizes scalar cell values, enforces limits, determines deterministic first occurrences of file business keys, and writes bounded JSONL chunk objects to shared storage.
+-6. One `import_chunks` row is inserted per object. With 50,000 rows and chunk size 1,000, exactly 50 chunks are created.
+-7. `ChunkBatchDispatcher` creates one Laravel Job Batch containing 50 `ProcessImportChunkJob` instances. `allowFailures()` lets Laravel finish accounting even if a chunk exhausts retries; the batch's `finally` callback dispatches `FinalizeImportJob`. The preparation lease remains live until the batch ID is saved; if that narrow dispatch phase crashes, a retry/recovery worker claims only the already-prepared dispatch phase instead of reparsing the source.
+-8. Each chunk job restores context, atomically claims its row lease, verifies the chunk checksum, validates rows, resolves references in batches, transforms valid rows, applies duplicate semantics, and writes/stages them in a transaction.
+-9. The business write, row failures, chunk terminal update, and import counter increments share the same connection and transaction when using the default target. This is the strongest retry guarantee.
+-10. `FinalizeImport` rejects early finalization, fails an import with terminal infrastructure-failed chunks, completes partial imports, or invokes the atomic staging committer.
+-11. Imports with row failures dispatch `GenerateImportErrorReportJob`.
+-
+-## 4. Layers and class responsibilities
+-
+-### Entry and configuration
+-
+-| Class | Problem solved |
+-| --- | --- |
+-| `BulkImportManager`, `PendingImport`, facade | Small fluent developer API without hiding durable `Import` state. |
+-| `BulkImportServiceProvider` | Package discovery, configuration, contracts, readers, migrations, routes, commands. |
+-| `ImportDefinitionRegistry` | Maps a trusted type/class registry; prevents arbitrary request-driven class execution. |
+-| `ImportDispatcher` | Synchronous acceptance boundary, storage, fingerprint race handling, initial state/events/queue dispatch. |
+-| `FilePreflightValidator` | Size, extension, MIME, upload status, empty and readability checks before queueing. |
+-| `ContextNormalizer` | Allows only configured scalar keys and bounds the serialized queue context. |
+-| `ImportFingerprint`, `CanonicalJson` | Stable hashing input despite associative-array key order; separates audit fingerprint from the unique submission key. |
+-| `ImportController`, `StoreImportRequest`, API resources | Optional HTTP validation, 202 acceptance, authorized projections, actions, pagination, and private report download. |
+-
+-### Source and preparation
+-
+-| Class | Problem solved |
+-| --- | --- |
+-| `SourceReader` | File-format-independent header/row contract. |
+-| `ReaderRegistry` | Selects the adapter by supported source properties. |
+-| `CsvReader` | Constant-memory CSV streaming, delimiter detection, quoted/multiline records. |
+-| `XlsxReader` | Constant-memory OpenSpout XLSX iteration. |
+-| `XlsxSecurityInspector` | Rejects corrupt ZIP containers, excessive expansion, and suspicious compression ratios. |
+-| `LocalFileMaterializer` | Makes a remote object temporarily usable by path-only libraries and deletes it in `finally`. |
+-| `StoredFileIntegrityVerifier` | Re-hashes the shared source before preparation so replaced/truncated objects cannot be parsed. |
+-| `PrepareImport` | Header validation, limits, source-to-canonical mapping, deterministic file duplicates, chunk metadata. |
+-| `ChunkFileStore` | JSONL chunk persistence/streaming plus SHA-256 integrity verification. |
+-| `FileInspection`, `SourceRow` | Small format-neutral values passed from readers into the common preparation pipeline. |
+-
+-### Definition, validation, and writing
+-
+-| Class | Problem solved |
+-| --- | --- |
+-| `ImportDefinition` | Public contract for columns, rules, business key, mode, duplicate policy, references, transform, writer. |
+-| `Reference` | Declarative source-column to model lookup with selected fields and missing-reference errors. |
+-| `ReferenceResolver` | One bounded `WHERE IN` series per reference, not one query per row. |
+-| `ResolvedReferences` | In-memory per-chunk lookup map used by pure row transforms. |
+-| `EloquentTarget` | Batched existing-key resolution and insert/upsert writing. |
+-| `BusinessKey` | Canonical, stable composite-key hashing. |
+-| `BusinessKeyLockManager` | Transaction-scoped logical locks across package-managed imports that touch identical keys. |
+-| `ConnectionGuard` | Refuses false transactional guarantees when metadata and target/atomic connections differ. |
+-| `EloquentAtomicCommitter` | Generic single-transaction merge from staging, including commit-time duplicate classification. |
+-| `ImportContext`, `BatchWriteResult` | Immutable runtime identity/options and an exact write-accounting contract. |
+-| `RejectRow` | Lets an expected domain transform rejection become a row failure; unexpected exceptions fail the chunk. |
+-
+-### Durability, orchestration, and projection
+-
+-| Class | Problem solved |
+-| --- | --- |
+-| `ImportStateMachine`, `ChunkStateMachine` | Explicit legal state edges; optimistic conditional updates reject concurrent stale transitions. |
+-| `ImportLeaseManager`, `ChunkLeaseManager` | Database claims with tokens/expiry; `ShouldBeUnique` is not the correctness boundary. |
+-| `PrepareImportJob` | Retryable structure validation and chunk creation. |
+-| `ProcessImportChunkJob`, `ChunkProcessor` | Concurrent row pipeline and retryable transactional write. |
+-| `ChunkCompletion` | Single conditional chunk completion plus atomic SQL counter increments. |
+-| `FinalizeImportJob`, `FinalizeImport` | Completeness checks, terminal state, atomic merge, report dispatch. |
+-| `RowFailureRecorder`, `FailureRedactor` | Batched row error persistence with configurable suppression/redaction/truncation. |
+-| `ErrorReportDispatcher`, `ErrorReportGenerator` | Idempotent report scheduling and bounded CSV generation with spreadsheet-formula neutralization. |
+-| `CancelImport`, `RetryImport` | Explicit cooperative cancellation and failed-stage-aware retry semantics. |
+-| `CleanupImportsCommand`, `RecoverStaleImportsCommand` | Retention plus recovery of interrupted cancellation/upload acceptance/undispatched preparation and expired preparation, batch-dispatch, chunk, and finalizer leases. |
+-| status/mode/strategy enums | Closed vocabularies for persisted lifecycle, failure stage, import mode, duplicate policy, and submission idempotency. |
+-| domain event classes | Scalar snapshots for import/chunk lifecycle integration without hard-coded notification channels. |
+-| package exception classes | Distinguish row rejection, file/configuration failure, lease loss, duplicate submission, cancellation, atomic rejection, and illegal transitions. |
+-
+-### Host integration
+-
+-| Contract | Host responsibility |
+-| --- | --- |
+-| `ContextRestorer` | Initialize and tear down tenant/application state around every queue callback. |
+-| `ImportAuthorizer` | Create/read/list/cancel/retry ownership policy and mandatory visibility scope. |
+-| `ImportTarget` | Existing-key resolution and safe batch write for non-Eloquent/domain-specific targets. |
+-| `AtomicCommitter` | A legitimate single-transaction merge for atomic mode. |
+-| `SourceReader` | Additional CSV/XLSX alternatives, JSONL, API objects, archives, or custom sources. |
+-| `ActorImportAuthorizer`, `NullContextRestorer` | Secure actor-only defaults and an explicit no-op context adapter for non-tenant applications. |
+-| package models and `UsesBulkImportConnection` | Map each durable table to the configured metadata connection and expose only the required relationships/casts. |
+-
+-## 5. Database model
+-
+-### `imports`
+-
+-The aggregate root uses a ULID primary key. It stores source identity, definition/type/version, file hash, full fingerprint, unique `deduplication_key`, state/mode/policy, durable counters, actor, generic context, options, dispatch/batch IDs, leases, lifecycle timestamps, error metadata, and report location.
+-
+-`fingerprint` is always retained for audit. `deduplication_key` equals it for `reject`/`return_existing`; `allow` uses a random salted SHA-256 key. This avoids database-specific nullable-unique behavior while allowing deliberate repeats.
+-
+-### `import_chunks`
+-
+-One row represents one immutable prepared JSONL object. `(import_id, chunk_number)` is unique. The row contains physical source range, checksum, status, independent counters, attempts, and a lease. A retry never creates another chunk number.
+-
+-### `import_failures`
+-
+-Stores one validation/reference/duplicate message. A row can have multiple messages, while `failed_rows` counts distinct failed row numbers. Original data is optional, configurable, column-redacted, value-truncated, and replaced by a marker when the serialized row exceeds `max_row_bytes`. It must not be treated as a secure secret store.
+-
+-### `import_row_keys`
+-
+-`UNIQUE(import_id, key_hash)` is populated sequentially during preparation. It records the physical first source row for each complete business key. Later duplicate rows are annotated in their chunk file. This makes “first row wins” deterministic even though chunks later run concurrently.
+-
+-### `import_staged_rows`
+-
+-Atomic mode stages transformed valid payloads plus the source snapshot needed for commit-time failure reporting, with `UNIQUE(import_id, row_number)`. Retried chunks upsert the same staging identity. Production data is untouched until finalization, and staging is subject to terminal cleanup/retention.
+-
+-### `import_key_locks`
+-
+-The composite primary key `(scope_hash, key_hash)` is an ephemeral logical mutex. Workers insert sorted key sets inside the same transaction as the target write and delete them before commit. Competing transactions wait at the unique index; a crash rolls the inserts back. This serializes package-managed writes to the same key without relying on a particular cache driver.
+-
+-## 6. State machines
+-
+-Legal import transitions:
+-
+-| From | To |
+-| --- | --- |
+-| `uploaded` | `queued`, `cancelled`, `failed` |
+-| `queued` | `validating`, `cancelled`, `failed` |
+-| `validating` | `processing`, `cancelled`, `failed` |
+-| `processing` | `finalizing`, `cancelled`, `failed` |
+-| `finalizing` | `completed`, `completed_with_errors`, `failed`, `cancelled` |
+-| `failed` | `queued` only through explicit retry |
+-| terminal states | none |
+-
+-All normal successful paths pass through `finalizing`; row errors do not jump directly from `processing` to a terminal state. Conditional `WHERE status = old_status` updates ensure two finalizers cannot both win.
+-
+-Chunk transitions are `queued → processing → completed|failed|cancelled`; a failed chunk can return to queued only during retry. Lease takeover of an expired `processing` row is an internal recovery operation, not an arbitrary public state transition.
+-
+-## 7. Idempotency and concurrency
+-
+-### Import level
+-
+-The fingerprint is SHA-256 of canonical JSON containing:
+-
+-- source SHA-256;
+-- definition class and developer-controlled semantic version;
+-- normalized context;
+-- relevant normalized options;
+-- actor identity by default, preventing a replay from returning another actor's protected record.
+-
+-Pre-querying improves latency, but the unique `deduplication_key` resolves simultaneous default submissions. If both requests pass the first query, one insert wins; the loser deletes its redundant stored object and returns/rejects the winning import.
+-
+-### Chunk level
+-
+-- `(import_id, chunk_number)` prevents duplicate chunk creation.
+-- An atomic conditional lease lets one live worker own a chunk.
+-- The immutable chunk checksum detects corrupt/incomplete shared objects.
+-- The worker renews and verifies its lease immediately before writing; all row effects and metadata completion are then one transaction with the default target.
+-- A completed chunk cannot be claimed again.
+-- Preparation-to-batch dispatch has its own resumable lease window; recovery reuses immutable chunk rows and duplicate deliveries remain harmless.
+-- Hard-killed processing leases can be reclaimed after expiry; the scheduler command covers lost queue deliveries and reconstructs a lost batch-finalizer callback once every chunk is terminal.
+-- Finalization is claimed only when no queued/processing chunk exists. An early finalizer from a duplicate batch is therefore a harmless no-op instead of changing the aggregate to `finalizing` prematurely.
+-
+-### Database level
+-
+-Application checks are advisory. The host target must have a unique index matching `targetUniqueBy()`. `uniqueBy()` remains the source-file key; this separation lets a transform inject `tenant_id` into a composite target key without requiring it in the workbook. For concurrent package imports, key locks make duplicate policy deterministic. An unrelated external writer may not honor those locks; the unique index still prevents duplicate records. If an external insert wins an `ERROR`/`SKIP` race, the batch insert rolls back and retry reclassifies that key from current database state.
+-
+-If source or target uniqueness uses case-/accent-insensitive semantics, override the corresponding source/target hash method with equivalent normalization. Target lookup, locking, and staging share `targetBusinessKeyHash()` so target hashes do not drift between phases.
+-
+-The strongest exactly-once-like behavior requires package metadata, lock rows, and target rows on the same resolved database connection. This is normally achieved by restoring tenancy first and keeping package tables in that tenant database. `ConnectionGuard` rejects partial writers and atomic committers when connections differ. For central metadata plus tenant business databases, use partial mode with a domain idempotency token/outbox writer; two independent databases cannot be made globally atomic by Laravel.
+-
+-## 8. Progress under concurrency
+-
+-Workers never perform read-modify-save counters in PHP. Once a token-owned chunk changes to completed, `ChunkCompletion` updates the import with SQL expressions such as `processed_rows = processed_rows + N` in the same transaction. If a retry finds the chunk already completed it cannot increment again.
+-
+-The API percentage is `floor(processed_rows / total_rows * 100)`, capped at 100. Chunk state counts are separate `withCount` projections. In atomic mode `stagedRows` exposes validated-but-not-yet-committed work; `succeededRows` remains zero until the final merge commits.
+-
+-## 9. Partial and atomic transaction boundaries
+-
+-### Partial
+-
+-Each chunk is independent. Valid rows commit even if other rows fail validation. A five-row chunk can commit four target changes plus one failure record. When all chunks finish, any row failure produces `completed_with_errors`.
+-
+-The package does not claim rollback of already committed partial chunks after cancellation or a later infrastructure failure.
+-
+-### Atomic
+-
+-Workers only validate/transform/stage. If any row failed, production writes are skipped and staging is cleaned. If all rows passed, the configured `AtomicCommitter` merges all staged rows inside one final transaction that also sets the aggregate to completed. A crash before commit rolls back both target changes and terminal state; a retry safely repeats the merge.
+-
+-The generic Eloquent committer is correct but may hold a long transaction for hundreds of thousands of rows. Application-specific database staging/merge strategies are preferred at very high scale.
+-
+-## 10. Failure categories
+-
+-- **Row failure:** expected bad business input. Stored in `import_failures`; partial import continues.
+-- **Chunk failure:** infrastructure, checksum, developer bug, transaction error, or unavailable database. The transaction rolls back; Laravel retries. Exhaustion leaves the chunk failed and the import becomes failed. Failures already committed by other chunks remain reportable.
+-- **Import failure:** corrupt/malformed source, invalid headers/worksheet, row/file limit, no atomic committer, exhausted chunks, or failed finalization. These are not mislabeled as row errors.
+-- **Report failure:** production import result remains terminal. The report job has its own retries and can be redispatched; report generation does not rewrite business rows.
+-
+-## 11. Cancellation
+-
+-Cancellation first persists `cancel_requested_at`, cancels the Laravel batch, marks queued/failed chunks cancelled, and moves the aggregate to cancelled. A finalizer cannot claim an import bearing that flag, and recovery completes an interrupted cancellation after the grace period. Preparation checks its lease at chunk boundaries and discards any prepared prefix; a chunk worker checks before work and immediately before its write transaction. There is an unavoidable cooperative window: a chunk already committing may finish. Partial data already committed is retained. No rollback promise is made. If completed chunks already recorded row failures, cancellation also schedules their CSV error report.
+-
+-## 12. Security controls
+-
+-- trusted definition registry; no request-provided class execution;
+-- generated object paths and `basename`/control-character cleanup; no user path traversal;
+-- detected MIME plus allowlisted extension; XLSX structural and expansion checks;
+-- file/row/column/cell/context limits;
+-- formulas are never evaluated by the engine;
+-- exported formula-looking CSV values are prefixed with an apostrophe;
+-- failure data can be disabled or redacted and is bounded per value, row, message, code, and column;
+-- context accepts only allowlisted scalar values and should never contain credentials;
+-- default actor ownership and mandatory list scope prevent IDOR;
+-- events contain scalar snapshots instead of queue-time Eloquent rehydration, so tenant context can be restored first;
+-- objects are written with private visibility by default; downloads pass through authorizer and never expose a raw disk path;
+-- source, chunk, staging, failure records, and reports have explicit retention;
+-- unexpected transform exceptions fail/retry a chunk rather than converting code defects into silent bad-row results.
+-
+-Mime detection is imperfect across platforms: XLSX can appear as OOXML, ZIP, or octet-stream. The broad MIME entries are therefore combined with extension selection and ZIP/OpenSpout structural parsing, rather than trusted alone.
+-
+-## 13. Operational invariants
+-
+-1. Every prepared chunk is immutable and checksum-addressed in metadata.
+-2. Every completed partial chunk satisfies `total = succeeded + failed + skipped`.
+-3. Every completed atomic validation chunk satisfies `total = staged + failed`.
+-4. Import counters change only when a lease-owned chunk first becomes completed.
+-5. An import cannot complete while a chunk is queued or processing.
+-6. Any terminal infrastructure-failed chunk makes the import failed, not completed-with-errors.
+-7. A target unique constraint is required even when application duplicate validation is enabled.
+-8. `retry` never blindly reruns a completed chunk.
+-
+-## 14. Extension path
+-
+-- Add JSON/JSONL by implementing `SourceReader` and registering it in `ReaderRegistry`.
+-- Add tenant adapters by binding `ContextRestorer`.
+-- Add organization-level access by binding `ImportAuthorizer`.
+-- Add non-Eloquent destinations by implementing `ImportTarget` or overriding `handleBatch` with a result-count contract.
+-- Add database-native atomic merge by implementing `AtomicCommitter`.
+-- Listen to events for websockets, email, audit logs, or domain notifications.
+-- A future asynchronous preview can reuse reader, validation, reference, and duplicate services while using a no-write sink; see `DECISIONS.md`.
+diff --git a/docs/DECISIONS.md b/docs/DECISIONS.md
+index 6957c85..dd2e26a 100644
+--- a/docs/DECISIONS.md
++++ b/docs/DECISIONS.md
+@@ -1,223 +1,3 @@
+-# Engineering Decisions
++# Design decisions
+ 
+-Each decision records the selected design, alternatives, and the cost accepted. These are implementation explanations, not private chain-of-thought.
+-
+-## D001 — Name the aggregate `Import`
+-
+-**Decision:** The durable database/domain entity is `Import`; queue classes end in `Job`.
+-
+-**Why:** `ImportJob` is ambiguous in Laravel because “job” already means a serialized queue command. `Import` reads naturally in API routes, policies, events, and relationships.
+-
+-**Alternatives:** `BulkImport` was also clear but collides with the fluent facade concept; `ImportProcess` is accurate but verbose.
+-
+-**Tradeoff:** `Import` is a broad word, so the package namespace is important.
+-
+-## D002 — ULIDs for durable package entities
+-
+-**Decision:** `imports`, chunks, failures, row-key claims, and staged rows use ULIDs.
+-
+-**Why:** They are safe to expose in URLs, sortable by creation time, decentralizable, and less enumerable than integers. They avoid relying on a central sequence when work is distributed.
+-
+-**Alternatives:** UUIDv4 is similarly decentralized but has poorer index locality; bigint is smaller/faster but enumerable and sequence-dependent.
+-
+-**Tradeoff:** ULID indexes are larger than bigint indexes. Actor IDs remain strings because host applications may use integer, UUID, or ULID keys.
+-
+-## D003 — Prepare shared JSONL chunks before concurrent processing
+-
+-**Decision:** One preparation job streams the source and writes bounded, checksummed JSONL objects. Chunk jobs read those objects.
+-
+-**Why:** A worker can read chunk 18 without reparsing or downloading the entire XLSX. JSONL is source-neutral, easy to stream, inspect, checksum, and store on any Laravel disk. It also freezes physical row numbers and deterministic file-duplicate annotations.
+-
+-**Alternatives:** Every job reopening the workbook wastes network/CPU and complicates XLSX random access. Passing row arrays in queue payloads makes payloads huge. Storing every raw row in the database creates substantial database write amplification before useful work begins.
+-
+-**Tradeoff:** Preparation adds shared-storage I/O and temporary chunk objects. Retention cleanup is required. A stored-object SHA-256 pass protects the upload boundary; XLSX then performs a header materialization plus a streaming materialization. All passes are memory-bounded, but remote-object bandwidth is a deliberate integrity/throughput tradeoff.
+-
+-Filesystem writes and database inserts cannot share a transaction. A hard process kill after object storage succeeds but before the `imports` insert can leave an untracked incoming object; production disks should apply a lifecycle rule to the generated incoming prefix as a final safety net. Once an `imports` row exists, `recover-stale` can resume an interrupted `uploaded` or undispatched `queued` aggregate.
+-
+-## D004 — OpenSpout is only a reader adapter
+-
+-**Decision:** OpenSpout handles XLSX streaming behind `SourceReader`; CSV uses a native streaming adapter.
+-
+-**Why:** The package architecture depends on rows/headers, not Excel concepts. Swapping OpenSpout or adding JSON requires no orchestration change.
+-
+-**Alternatives:** PhpSpreadsheet has broad format/formula features but often uses materially more memory. Laravel Excel is productive but would pull its lifecycle concepts into the engine.
+-
+-**Tradeoff:** Built-in V1 supports `.csv` and `.xlsx`, not legacy `.xls`, macros, formula calculation, styles, or arbitrary workbook features.
+-
+-## D005 — Explicit state machine with conditional database transitions
+-
+-**Decision:** State edges are enumerated and writes include the expected old state.
+-
+-**Why:** An enum by itself prevents typos but not illegal transitions or two finalizers winning. `WHERE status = old` creates optimistic concurrency control.
+-
+-**Alternatives:** Free-form status assignment is simpler but permits `queued → completed`. A third-party state-machine package would add dependency surface for a small closed graph.
+-
+-**Tradeoff:** Internal recovery transitions need dedicated lease code instead of casual model mutation.
+-
+-## D006 — Database leases, not only `ShouldBeUnique`
+-
+-**Decision:** Import/chunk rows contain token and expiry; claiming is atomic.
+-
+-**Why:** Queue uniqueness is delivery optimization, not a durable business lock. Configuration changes, expired cache locks, manual dispatch, or redelivery can still produce concurrent consumers. The database row is the correctness boundary.
+-
+-**Alternatives:** Redis/cache locks are fast but tie correctness to a correctly shared atomic cache. Pessimistic row locks cannot span an entire queue job safely.
+-
+-**Tradeoff:** Lease expiry and `retry_after`/timeout must be coordinated. A recovery scheduler is needed for hard-killed/lost work.
+-
+-Finalization uses the same principle: its atomic claim includes a `NOT EXISTS` check for queued/processing chunks. The recovery command reconstructs a finalizer when every chunk is terminal but the Laravel batch callback was lost.
+-
+-The preparation lease deliberately remains attached after `validating → processing` until `batch_dispatched_at` is persisted (`queue_batch_id` is also stored for non-empty batches). A retry can atomically claim `processing + no dispatch marker` and dispatch the immutable prepared chunks without parsing the source again. This closes the crash window between preparation commit and Laravel batch creation; an extremely narrow crash after the queue accepted jobs but before the marker update can create a duplicate batch, but chunk leases and terminal state transitions make those deliveries no-ops.
+-
+-## D007 — Deterministic file duplicates are claimed during preparation
+-
+-**Decision:** `import_row_keys` records the physical first row sequentially before chunks run.
+-
+-**Why:** If concurrent chunk workers tried to claim “first,” scheduler timing rather than file order would choose the winner. Preparation already reads in file order and can make the result deterministic with one batched claim per chunk.
+-
+-**Alternatives:** An in-memory hash set is fast but can consume large memory at million-row limits. Sorting a separate key file is scalable but more complex. Worker-time unique inserts are nondeterministic.
+-
+-**Tradeoff:** Preparation performs bounded database operations in addition to storage writes.
+-
+-## D008 — Audit fingerprint plus portable unique submission key
+-
+-**Decision:** Keep an audit fingerprint for every import. Use that fingerprint as the unique `deduplication_key` for `reject`/`return_existing`; for `allow`, store a random salted hash while retaining the original audit fingerprint.
+-
+-**Why:** A plain unique fingerprint prevents an explicit “allow duplicate import,” while a pre-query without a unique constraint races. A non-null unique key is portable to databases such as SQL Server, whose nullable-unique behavior differs from PostgreSQL/MySQL. The random key preserves explicit repeats without weakening simultaneous default submissions.
+-
+-**Fingerprint inputs:** file hash, definition class + explicit definition version, normalized context, relevant options, and actor identity by default.
+-
+-**Actor rationale:** Without actor scope, actor B could replay actor A's file and receive a protected import ID owned by A. Applications that authorize imports at tenant rather than actor level may disable this only with a matching custom authorizer.
+-
+-**Tradeoff:** Two actors in the same tenant create separate imports by default.
+-
+-## D009 — Database unique constraints remain mandatory
+-
+-**Decision:** `uniqueBy()` describes the source-file key; `targetUniqueBy()` describes the post-transform database key, and the host table must enforce the latter.
+-
+-**Why:** `SELECT then INSERT` races. Validation and logical locks cannot constrain unrelated application code or direct database writes. Native unique indexes/upserts are the final integrity layer.
+-
+-**Tradeoff:** Installing a definition includes a host migration responsibility the package cannot infer safely.
+-
+-## D010 — Transaction-scoped logical business-key locks
+-
+-**Decision:** Package-managed imports insert sorted `(scope_hash, key_hash)` rows in the target transaction and delete before commit.
+-
+-**Why:** Concurrent `ERROR`, `SKIP`, and `UPDATE` decisions need a stable ordering, not only duplicate-free final data. A unique index makes a second transaction wait. Rollback removes locks after a crash.
+-
+-**Alternatives:** Cache locks depend on cache topology. Advisory locks are database-specific. `SELECT FOR UPDATE` cannot lock a missing target row.
+-
+-**Tradeoff:** There is lock-table insert/delete work and potential contention for genuinely identical keys. Inserts, lookups, and deletes are split below driver parameter ceilings. Partial chunks sort their own key set; the atomic committer acquires the entire import's distinct key set in global sorted order before merging, avoiding cross-batch lock-order deadlocks. External writers that do not use this protocol can still race; the business unique index prevents duplicates, while strict UPDATE semantics under an external concurrent delete require a domain target.
+-
+-## D011 — Atomic SQL increments for progress
+-
+-**Decision:** A first-time chunk completion uses SQL counter expressions in its write transaction.
+-
+-**Why:** Reading `processed_rows=17000` in two workers and both saving `18000` loses 1,000 rows. Atomic increments compose under concurrency. Conditioning chunk completion on its lease prevents retry double-counting.
+-
+-**Alternative:** Recalculate sums from all chunks for every API request is reliable but increases read cost. A periodic projection is another viable high-scale option.
+-
+-**Tradeoff:** The aggregate row is briefly contended at completion time, but not during row validation/reference resolution/business writes.
+-
+-## D012 — Default transactional guarantee requires one resolved connection
+-
+-**Decision:** `ConnectionGuard` requires package metadata/locks, partial target writers, and atomic committers to resolve to the same database connection.
+-
+-**Why:** A crash between committing business database A and progress database B cannot be made atomic with ordinary Laravel transactions. Claiming otherwise would be false exactly-once semantics.
+-
+-**Alternatives:** Distributed transactions are unavailable or undesirable in most Laravel deployments. A domain outbox/idempotency receipt can support cross-database imports and belongs in a custom target.
+-
+-**Tradeoff:** Central import metadata plus tenant business databases cannot use package-level atomic mode. Partial mode needs a domain-idempotent adapter/outbox. In multi-database tenancy, placing package tables in each tenant database gives the strongest built-in semantics.
+-
+-## D013 — Partial mode commits one chunk transaction
+-
+-**Decision:** Valid rows, row failures, completion, and counters for a chunk commit together.
+-
+-**Why:** It bounds transaction time while ensuring a retry never observes business rows without a completed chunk under the default connection rule.
+-
+-**Alternatives:** Per-row transactions are query-heavy. A single 50,000-row transaction blocks longer and defeats concurrent queues.
+-
+-**Tradeoff:** A later failed chunk or cancellation does not roll back earlier completed partial chunks.
+-
+-## D014 — Atomic mode uses staging plus an explicit committer
+-
+-**Decision:** Validation jobs stage transformed rows. Only the finalizer writes production data, using `AtomicCommitter` in one transaction that also records terminal state.
+-
+-**Why:** Fifty independently committed queue jobs are not globally atomic. Staging separates scalable validation from the only valid all-or-nothing boundary.
+-
+-**Alternatives:** Pretending batch cancellation rolls back target data is incorrect. Holding one transaction open while 50 jobs run is impossible and dangerous.
+-
+-**Tradeoff:** More storage (including a temporary source snapshot for commit-time error reporting) and a potentially long final transaction. Generic Eloquent merging is provided, but high-volume domains should implement native staging/merge. If any row fails, valid staged rows are withheld and then cleaned.
+-
+-## D015 — Retry continues the same import and only failed work
+-
+-**Decision:** `POST retry` is permitted only for `failed`. Preparation rebuilds; chunk failure resets only failed chunks; finalization failure reruns only finalization.
+-
+-**Why:** Blindly rerunning completed chunks can duplicate non-idempotent domain effects and corrupt counters. A corrected file is a new import and fingerprint.
+-
+-**Alternatives:** Always create a new import attempt preserves history but complicates progress identity and file ownership. A future `import_attempts` child table could add attempt history without changing the public ULID.
+-
+-**Tradeoff:** The aggregate's `attempts`/chunk attempts provide operational evidence, but there is not a full per-attempt audit table in V1.
+-
+-## D016 — Cancellation is cooperative
+-
+-**Decision:** Cancel the batch, mark waiting chunks, set durable cancellation state, and let running chunks check safe boundaries.
+-
+-**Why:** A process may already be in a database commit. Killing it cannot promise rollback across queue backends and databases.
+-
+-**Alternatives:** Never allow cancellation is safer but poor UX. Force-killing workers can affect unrelated jobs and leaves leases.
+-
+-**Tradeoff:** Partial changes committed before/during cancellation remain. The API and docs state this explicitly.
+-
+-## D017 — Authorization uses a mandatory scope hook
+-
+-**Decision:** `ImportAuthorizer` covers both individual actions and list-query scoping. The default matches actor morph type/string ID.
+-
+-**Why:** Checking only `show` still leaks imports in `index`; checking only route middleware does not prevent ULID substitution. Host roles/tenant admins need a replaceable policy layer without an auth-driver dependency.
+-
+-**Tradeoff:** Default behavior is intentionally conservative and does not grant organization admins implicit access.
+-
+-## D018 — Generic context is allowlisted, scalar, and explicitly restored
+-
+-**Decision:** Store/queue only bounded allowlisted scalars and call `ContextRestorer` before any job model lookup.
+-
+-**Why:** Queue workers do not inherit the HTTP request. Coupling to Stancl/Spatie would make the core less reusable. Passing model/request/container objects is unsafe and stale.
+-
+-**Tradeoff:** The host must bind a correct restorer and teardown. Secrets are prohibited because queue payloads and database JSON may be observable operationally.
+-
+-## D019 — Error reports are streaming CSV first
+-
+-**Decision:** V1 generates CSV with original row number/data and structured error fields.
+-
+-**Why:** CSV is interoperable, cheap to stream, and easy to repair/re-upload. Formula injection is neutralized.
+-
+-**Alternatives:** XLSX preserves sheets/types and can append an error column but adds memory/library complexity. A copy of the original dataset with `Import Errors` is feasible through a report adapter.
+-
+-**Tradeoff:** Original data is JSON inside one CSV cell rather than reconstructed columns. XLSX is a documented extension, not falsely advertised.
+-
+-## D020 — Preview is V2, but the validation pipeline is reusable
+-
+-**Decision:** Do not expose a synchronous 50,000-row preview endpoint in V1.
+-
+-**Why:** A correct preview needs the same streaming, reference, duplicate, context, and concurrency semantics and can itself time out. Duplicating a “light” validation loop would drift from real import behavior.
+-
+-**Planned design:** async dry-run import mode using the same preparation/chunk validation pipeline with a no-write target, plus inserted/updated/skipped estimates captured at a database snapshot point.
+-
+-**Tradeoff:** V1 users get exact post-dispatch progress/failures, not a pre-dispatch 50,000-row estimate. The architecture can add it without changing reader/validator definitions.
+-
+-## D021 — Reports do not change successful business status
+-
+-**Decision:** Report generation has independent retries and report availability; failure does not turn a completed business import into failed.
+-
+-**Why:** Business rows have already committed. Status should describe import outcome, not an ancillary downloadable artifact.
+-
+-**Tradeoff:** Operators need to monitor/retry report jobs separately.
+-
+-## D022 — Domain events are integration signals, not a transactional outbox
+-
+-**Decision:** Emit scalar domain events at lifecycle boundaries while keeping database state as the source of truth.
+-
+-**Why:** Laravel listeners provide a natural integration point without coupling the engine to mail, websockets, or Slack. Scalar snapshots avoid tenant model rehydration before context restoration.
+-
+-**Alternatives:** A package-owned transactional outbox could provide independently deliverable event records, but it imposes another persistence/relay protocol and host-specific delivery semantics.
+-
+-**Tradeoff:** A crash at a database/event boundary can lose or repeat a notification. Listeners must be idempotent, should normally be queued, and must query the durable Import when exact current state matters. Hosts needing guaranteed external delivery should write an outbox entry from an application listener on the same database connection.
++The working import/export/template engines are preserved. One DataDefinition remains the source of field, relation, validation and representation metadata. Guest access is an opt-in credential identity, tenancy is optional server state, and CLI work has an explicit system owner. Notifications use separate receipts/jobs and isolate delivery failures from successful business operations. Independent PHP worker tests verify row/progress idempotency. Benchmarks record executed results; deployment behavior on native databases/brokers/storage is not inferred from SQLite evidence.
+diff --git a/docs/IMPLEMENTATION_WALKTHROUGH.md b/docs/IMPLEMENTATION_WALKTHROUGH.md
+index 75cda0a..861b436 100644
+--- a/docs/IMPLEMENTATION_WALKTHROUGH.md
++++ b/docs/IMPLEMENTATION_WALKTHROUGH.md
+@@ -1,335 +1,3 @@
+-# Implementation Walkthrough: 50,000 Students
++# Current documentation
+ 
+-This document follows the concrete example in `examples/`. It explains observable engineering behavior, not private reasoning.
+-
+-Assumptions:
+-
+-- source: a generated `students.xlsx`; the same generator can emit equivalent CSV data;
+-- one header row plus 50,000 data rows;
+-- chunk size: 1,000;
+-- mode: `PARTIAL`;
+-- duplicate strategy: `UPSERT`;
+-- `students.student_code` and `courses.code` have unique indexes;
+-- ten courses, `COURSE-01` through `COURSE-10`, already exist;
+-- `STU-00017800` already exists and will be updated;
+-- queue, cache, database, and shared filesystem are configured;
+-- tenant context is `['tenant_id' => 42]` and the host restorer initializes tenant 42 around every job.
+-
+-## The exact 25-step path
+-
+-### 1. Which controller receives the request?
+-
+-When optional package routes are enabled, `ImportController::store()` receives `POST /api/imports`. A host controller can instead call the fluent API directly. The request contains `type=students`, `file=students.xlsx`, optional context/options, and an idempotency strategy.
+-
+-The configured route middleware authenticates the request. The package has no Passport/Sanctum/JWT dependency.
+-
+-### 2. Which validation is synchronous?
+-
+-`StoreImportRequest` validates the shape and registered type. `FilePreflightValidator` then checks upload success, detected MIME, allowlisted extension, non-empty size, configured maximum size, and local temporary readability. `ContextNormalizer` rejects unapproved or non-scalar context. `ImportDefinitionRegistry` validates the definition configuration.
+-
+-It does not read or validate 50,000 business rows in the request.
+-
+-### 3. Where is the file stored?
+-
+-`ImportDispatcher` stores it through Laravel Filesystem at a generated path similar to:
+-
+-```text
+-bulk-imports/incoming/2026/08/01K...XLSX.xlsx
+-```
+-
+-The configured disk may be S3, MinIO, or any Laravel disk. The original filename is metadata only and cannot choose the path.
+-
+-### 4. Which database record is created?
+-
+-An `imports` ULID row is inserted with:
+-
+-- type and trusted definition class;
+-- original filename, disk, generated path;
+-- file SHA-256;
+-- fingerprint and optional unique deduplication key;
+-- `uploaded` state followed by a conditional transition to `queued`;
+-- mode and duplicate strategy;
+-- actor type/ID;
+-- serialized context/options;
+-- zero counters.
+-
+-`ImportCreated` and `ImportQueued` are emitted.
+-
+-### 5. What HTTP response is returned?
+-
+-The controller returns `202 Accepted`:
+-
+-```json
+-{
+-  "data": {
+-    "id": "01K2...",
+-    "type": "students",
+-    "status": "queued",
+-    "progress": {
+-      "totalRows": 0,
+-      "processedRows": 0,
+-      "succeededRows": 0,
+-      "failedRows": 0,
+-      "skippedRows": 0,
+-      "stagedRows": 0,
+-      "percentage": 0
+-    }
+-  }
+-}
+-```
+-
+-The file is durable and the browser is no longer responsible for the work.
+-
+-### 6. Which job is dispatched?
+-
+-`PrepareImportJob(importId, context)` is dispatched to the configured connection and `imports` queue. The job restores context before loading package models, then atomically claims the queued import with a lease token.
+-
+-### 7. How is row count calculated?
+-
+-The preparation worker validates the header and streams data rows with OpenSpout. It increments an integer for every non-empty data row. It rejects row 1,000,001 if `max_rows=1,000,000`. No array of 50,000 rows is built.
+-
+-The current XLSX adapter makes two bounded passes on the preparation worker: a short header inspection and the streaming preparation pass. It may materialize a remote object for each pass, but no chunk worker reopens/downloads the original workbook.
+-
+-At the end it persists `total_rows=50000`.
+-
+-### 8. How are chunks created?
+-
+-`PrepareImport` keeps at most 1,000 normalized rows in memory. For each buffer it:
+-
+-1. claims complete business keys in `import_row_keys`;
+-2. annotates later occurrences with the physical first row;
+-3. writes JSONL to `bulk-imports/chunks/{importId}/00000018.jsonl`;
+-4. calculates SHA-256 while writing;
+-5. inserts one `import_chunks` row with source range and checksum.
+-
+-50,000 / 1,000 produces 50 chunks. `(import_id, chunk_number)` is unique.
+-
+-### 9. How is the Laravel Job Batch created?
+-
+-After all 50 chunk records/objects exist, the import transitions `validating → processing`. The preparation lease remains live while `ChunkBatchDispatcher` creates a Laravel Job Batch with 50 `ProcessImportChunkJob` objects, calls `allowFailures()`, stores `queue_batch_id`, and registers a scalar-only `finally` callback that dispatches `FinalizeImportJob`.
+-
+-If the worker dies after committing chunk metadata but before saving the durable dispatch marker/batch ID, queue redelivery or `bulk-imports:recover-stale` claims that narrow dispatch phase and reuses the 50 immutable chunks. It does not reparse 50,000 rows. If an exceptionally narrow failure creates two batches, per-chunk leases make the duplicate jobs no-ops.
+-
+-The finalizer's database claim also requires that no chunk is queued or processing. Thus an early `finally` callback from a duplicate batch cannot move the import forward. If the real batch callback is lost after every chunk becomes terminal, `bulk-imports:recover-stale` reconstructs only `FinalizeImportJob` after the configured grace period.
+-
+-Laravel still owns batch bookkeeping. The package adds domain state that Laravel's generic batch tables do not represent.
+-
+-### 10. How do workers pick up chunks?
+-
+-Any worker listening to the configured imports queue can receive any chunk. Worker B may run chunk 18 while worker C runs chunk 19. Each job restores tenant 42, then `ChunkLeaseManager` performs one conditional update:
+-
+-```text
+-queued/failed/expired-processing → processing with unique lease token
+-```
+-
+-If another live worker already owns chunk 18, the update affects zero rows and the duplicate delivery is a no-op.
+-
+-### 11. How does a chunk read its rows?
+-
+-Chunk 18 reads its own shared JSONL object, not the XLSX. `ChunkFileStore` calculates SHA-256 as it yields lines and compares it with `import_chunks.checksum`. The array in memory is bounded to 1,000 rows.
+-
+-With a header at physical row 1, chunk 18 contains data items 17,001–18,000, physical worksheet rows 17,002–18,001.
+-
+-### 12. How are references preloaded?
+-
+-After non-reference Laravel rules pass, `ReferenceResolver` collects distinct `course_code` values from chunk 18. There are at most ten normal codes plus the deliberate missing code. It runs a bounded query equivalent to:
+-
+-```sql
+-SELECT id, code
+-FROM courses
+-WHERE code IN (...);
+-```
+-
+-The resulting `code → id` map is held for that chunk. There is no `Course::where(...)->first()` inside a 1,000-row loop.
+-
+-### 13. How does row validation run?
+-
+-Each source row is validated through Laravel's validator against the definition's rules. These are in-memory validations. A row with multiple rule messages may create multiple `import_failures` entries, but the failed-row counter counts the physical row once.
+-
+-Unexpected code exceptions are not swallowed as row failures. `RejectRow` is the explicit mechanism for an expected transform-level rejection.
+-
+-### 14. How are duplicates detected?
+-
+-There are three layers:
+-
+-1. Preparation already marked deterministic duplicate keys inside the file using `import_row_keys`.
+-2. Before a partial write, package workers acquire transaction-scoped logical locks for sorted target key hashes.
+-3. Strategies that need classification (`ERROR`, `SKIP`, and `UPDATE`) fetch existing student keys in parameter-safe lookup batches. `UPSERT` skips that unnecessary read and relies on the target's native upsert plus unique index.
+-
+-`UPSERT` sends both missing and existing rows to one target upsert. `students.student_code UNIQUE` is the final integrity boundary.
+-
+-### 15. How are valid rows written?
+-
+-`StudentsImport::transform()` replaces `course_code` with the preloaded `course_id`. `EloquentTarget` performs a batch `upsert` using `student_code` and configured update columns.
+-
+-Immediately before writing, chunk 18 renews and verifies its lease token. The target write, failure inserts, chunk completion, and aggregate counter increments are then in one database transaction on the same resolved connection.
+-
+-### 16. How is progress updated?
+-
+-Only the first worker that still owns chunk 18's lease can change it to completed. In the same transaction, `ChunkCompletion` executes SQL increments on `imports`; it never loads `processed_rows`, adds in PHP, and saves a stale value.
+-
+-After 17 earlier chunks complete, the aggregate can show 17,000 processed. When chunk 18 commits, it atomically adds 1,000. Workers finishing out of order are safe because addition is commutative and each chunk can add once.
+-
+-### 17. How are row failures stored?
+-
+-`RowFailureRecorder` batches failures with source row, column, code, message, and optionally redacted/truncated original data. Password/token/secret-like configured columns are replaced. Oversized serialized failure rows are replaced with a bounded marker. Original row storage can be disabled completely.
+-
+-For the generated chunk 18:
+-
+-| Data item | Physical row | Result |
+-| --- | ---: | --- |
+-| 17,500 | 17,501 | invalid email → row failure |
+-| 17,600 | 17,601 | `COURSE-MISSING` → row failure |
+-| 17,700 | 17,701 | duplicates student code from physical row 17,700 → row failure |
+-| 17,800 | 17,801 | existing student code → updated successfully by UPSERT |
+-
+-Chunk 18 therefore records 997 succeeded and 3 failed. The existing student update counts as a successful row operation.
+-
+-### 18. What happens when a worker crashes?
+-
+-If the process dies before transaction commit, the database rolls back target rows, failure rows, key locks, chunk completion, and counter increments. Its chunk remains processing until the database lease expires. Queue redelivery or `bulk-imports:recover-stale` dispatches it again.
+-
+-If the hard failure occurs after commit, the chunk is already completed. Redelivery cannot claim it, so it exits without another write or counter increment.
+-
+-### 19. What happens when Laravel retries a chunk?
+-
+-For a caught transient exception, the job conditionally marks its token-owned chunk failed and rethrows. Laravel applies `[10, 30, 90]` backoff by default. The next attempt can claim failed, increments `attempts`, re-reads the immutable chunk, and repeats the transaction.
+-
+-After the retry budget is exhausted, the batch can finish because `allowFailures()` is set, but finalization sees a terminal failed chunk and sets the aggregate to failed.
+-
+-### 20. Why are duplicates not created?
+-
+-- the target table has a unique index;
+-- package imports serialize identical keys in the write transaction;
+-- UPSERT is database-native;
+-- a rolled-back chunk leaves no target or completion effects;
+-- a committed chunk cannot be re-claimed;
+-- import replay is protected by a unique fingerprint-derived key;
+-- deterministic in-file duplicates are rejected before target writes.
+-
+-Application validation by itself is never presented as a uniqueness guarantee.
+-
+-### 21. How is final status calculated?
+-
+-The batch `finally` dispatches the finalizer only after every job has succeeded or exhausted failure handling. It refuses to finalize if a chunk is queued/processing.
+-
+-For this fixture:
+-
+-```text
+-49 ordinary chunks × 1,000 success = 49,000
+-Chunk 18                             =    997 success + 3 row failures
+-Total                                = 49,997 success + 3 row failures
+-```
+-
+-There are no terminal chunk infrastructure failures, so final status is `completed_with_errors`, not `failed`.
+-
+-### 22. How is the error report created?
+-
+-`GenerateImportErrorReportJob` walks an ordered database cursor and streams `import_failures` into CSV columns:
+-
+-```text
+-Original Row Number, Original Data, Error Column, Error Code, Error Message
+-```
+-
+-Formula-looking exported values are prefixed with `'`. The report is stored through Filesystem and its disk/path are attached to the import. Users can correct the three rejected rows and upload a small follow-up file.
+-
+-### 23. How does the frontend obtain progress?
+-
+-The frontend polls or listens to an application event listener around:
+-
+-```http
+-GET /api/imports/{id}
+-```
+-
+-An intermediate response can be:
+-
+-```json
+-{
+-  "data": {
+-    "id": "01K2...",
+-    "status": "processing",
+-    "progress": {
+-      "totalRows": 50000,
+-      "processedRows": 18000,
+-      "succeededRows": 17997,
+-      "failedRows": 3,
+-      "skippedRows": 0,
+-      "stagedRows": 0,
+-      "percentage": 36
+-    },
+-    "chunks": {
+-      "total": 50,
+-      "completed": 18,
+-      "processing": 4,
+-      "queued": 28,
+-      "failed": 0,
+-      "cancelled": 0
+-    }
+-  }
+-}
+-```
+-
+-The exact number of simultaneously processing chunks depends on worker count and queue configuration.
+-
+-### 24. How is authorization checked?
+-
+-Every list/read/failure/cancel/retry/download controller path invokes `ImportAuthorizer`. The default implementation requires the authenticated actor's morph type and string ID to match the import, and list queries are scoped before filters/pagination. The error report endpoint never trusts possession of an ULID.
+-
+-The fingerprint includes actor identity by default, so another actor submitting the same tenant/file/options does not receive the first actor's protected import record.
+-
+-### 25. What if the user closes the browser?
+-
+-Nothing changes. The browser request ended after step 5. File, aggregate, queue jobs, chunks, counters, and reports are server-side durable state. Reopening the page and requesting the import ULID shows current progress, subject to authorization.
+-
+-## Failure walkthroughs
+-
+-### Row failure: invalid email at physical row 17,501
+-
+-The Laravel validator returns an email error. No student write is attempted for that row. A failure is inserted in chunk 18's transaction. The other 999 rows continue; after the missing reference and file duplicate are also excluded, 997 rows are upserted. The final aggregate is `completed_with_errors`.
+-
+-### Chunk failure: database disconnect during chunk 18
+-
+-Assume the disconnect occurs while the upsert runs:
+-
+-1. The transaction is aborted; no chunk-18 students, failure rows, completion marker, locks, or counters commit.
+-2. The job catches the exception when possible, marks chunk 18 failed under its lease token, and rethrows.
+-3. Laravel waits for configured backoff and retries the same chunk ID.
+-4. Attempt two claims it and increments `attempts`.
+-5. Its file checksum and deterministic annotations are unchanged.
+-6. The transaction repeats. Unique constraints/upsert and the completion lease prevent corrupt duplication.
+-7. If attempt two succeeds, chunk 18 contributes exactly once.
+-8. If all attempts fail, finalizer makes the entire import `failed` with `failure_stage=chunk`. Row-level `completed_with_errors` is not used for infrastructure loss.
+-
+-The test `ChunkRetryTest` simulates this disconnect and asserts no student/counter survives the first transaction.
+-
+-### Import failure: corrupt workbook
+-
+-`XlsxSecurityInspector` or OpenSpout rejects the source during `PrepareImportJob`. No reliable row stream exists, so there are no meaningful per-row failures and no batch is dispatched. Laravel retries preparation because the corruption might instead be transient storage I/O. After exhaustion, `PrepareImportJob::failed()` sets:
+-
+-```text
+-status = failed
+-failure_stage = preparation
+-error_message = bounded structural error
+-```
+-
+-It does not report `completed_with_errors` because the engine could not establish a valid dataset to partially process.
+-
+-## Explicit retry semantics
+-
+-`POST /api/imports/{id}/retry` is allowed only for `failed`:
+-
+-- preparation failure: transition `failed → queued` and rerun preparation; old partial preparation is cleaned before rebuilding;
+-- chunk failure: preserve completed chunks/counters, reset only terminal failed chunks to queued, create a new batch containing only those IDs;
+-- finalization failure: preserve all completed chunks and redispatch finalization without re-running them.
+-
+-This is a continuation of the same Import ULID, not a new user submission. Corrected business data requires a new source upload and therefore a new Import.
+-
+-## Cancellation semantics
+-
+-`POST /api/imports/{id}/cancel` sets the cancellation timestamp, cancels the Laravel batch, marks not-yet-running chunks cancelled, and moves the aggregate to cancelled. Preparation notices its lost/cancelled lease at a chunk boundary and discards the prepared prefix; running chunk jobs check cancellation at safe boundaries. A transaction already committing may finish. Previously committed partial chunks remain. Atomic staging can be discarded before merge, but cancellation never promises rollback of already committed partial data.
+-
+-## Atomic variant of the same scenario
+-
+-With `AtomicStudentsImport`, all 50 workers validate and stage. If the same three invalid rows exist, no production student is written; status is `completed_with_errors`, `failed_rows=3`, `succeeded_rows=0`, and the historical `staged_rows=49997` explains how many valid rows were withheld. Staging records are then cleaned.
+-
+-If all 50,000 rows are valid, the finalizer invokes `AtomicCommitter` in one transaction, changes production rows, changes `succeeded_rows`, clears the active staged counter, deletes staging, and marks completed before commit. This is genuine atomicity, with the tradeoff of a large final transaction.
++See [quick-start.md](quick-start.md), [ownership](authorization.md), [notifications](notifications.md), and [verification](VERIFICATION.md). The legacy import API remains supported; the current docs describe the shared metadata engine and restored final layer.
+diff --git a/docs/PUBLIC_API.md b/docs/PUBLIC_API.md
+index d729ef0..d2e82d7 100644
+--- a/docs/PUBLIC_API.md
++++ b/docs/PUBLIC_API.md
+@@ -1,227 +1,3 @@
+-# Public API Reference
++# Current documentation
+ 
+-## Fluent entry point
+-
+-### `BulkImport::make(class-string<ImportDefinition>): PendingImport`
+-
+-Creates a builder. The class must appear in `config('bulk-imports.definitions')`; this applies even to server-side fluent calls so the same trusted registry governs API and code paths.
+-
+-### `PendingImport::file(UploadedFile): self`
+-
+-Sets the source upload. Required before dispatch.
+-
+-### `PendingImport::by(?object): self`
+-
+-Sets the actor. An actor must expose `getKey()`; `getMorphClass()` is used when available. The default authorizer requires an actor unless configured otherwise.
+-
+-### `PendingImport::context(array): self`
+-
+-Sets generic queue-restorable application context. Keys must be in `context.allowed_keys`; values must be scalar/null and floating-point values must be finite. Do not pass secrets.
+-
+-### `PendingImport::options(array): self`
+-
+-Sets canonical JSON options used by the definition/engine and fingerprint. Options must contain only JSON-safe values and are capped at 16 KiB and 32 nesting levels. Built-in option: integer `chunk_size`, bounded by configured min/max (1–5,000 by default). Definitions may read options through `ImportContext::option()`.
+-
+-### `PendingImport::idempotency(IdempotencyStrategy|string): self`
+-
+-- `reject`: throw `DuplicateImportException` with the existing import;
+-- `return_existing`: return the existing import;
+-- `allow`: store and queue another import, while retaining the same audit fingerprint.
+-
+-### `PendingImport::dispatch(): Import`
+-
+-Stores and queues work. It does not wait for rows. In a normal asynchronous environment the returned state is `queued`.
+-
+-## `ImportDefinition`
+-
+-Required methods:
+-
+-- `columns(): array` — canonical source columns; V1 treats every listed header as mandatory;
+-- `rules(): array` — Laravel validation rules applied per row;
+-- `uniqueBy(): array` — source-file key and non-empty subset of canonical columns; drives deterministic in-file duplicate detection;
+-
+-Optional/default methods:
+-
+-- `mode(): ImportMode` — defaults to `PARTIAL`;
+-- `duplicateStrategy(): DuplicateStrategy` — defaults to `ERROR`;
+-- `version(): string` — defaults to `1`; bump when semantic changes should not replay an older fingerprint;
+-- `targetUniqueBy(): array` — defaults to `uniqueBy()`; override when `transform()` injects context columns such as `tenant_id` into the database unique key;
+-- `sourceBusinessKeyHash(array): string` — exact-value source hash by default; override for source-equivalent normalization;
+-- `targetBusinessKeyHash(array): string` — exact-value target hash by default; override to match target case/accent collation;
+-- `target(): ?ImportTarget` — default null;
+-- `references(): array<Reference>` — default empty;
+-- `transform(array, ResolvedReferences, ImportContext): array` — default identity;
+-- `handleBatch(array, ImportContext): BatchWriteResult` — default delegates to target;
+-- `atomicCommitter(): ?AtomicCommitter` — required in atomic mode;
+-- `worksheet(): ?string` — selects XLSX sheet by exact name;
+-- `headerAliases(): array` — source-header to canonical-header mapping;
+-- `validateConfiguration(): void` — called by registry; definitions may extend validation carefully.
+-
+-Transforms should be deterministic and query-free. Put bulk lookups in `references()`. XLSX date cells are normalized to a stable date-time string before chunk serialization; use Laravel's `date` rule and format the target value in `transform()` when the destination is date-only. The transformed payload must retain every non-empty `targetUniqueBy()` field; violating that contract is a definition error that rolls the chunk back. Throw `RejectRow(code, message, column)` only for an expected row-level domain rejection; let infrastructure/programming exceptions propagate so the chunk rolls back/retries.
+-
+-Overriding `handleBatch()` without an `ImportTarget` is supported only for `UPSERT`. That custom writer must be idempotent and return exact counters. If it writes outside the metadata transaction (another database or an external service), use a durable domain receipt/outbox and understand that package counters cannot make the two systems globally atomic.
+-
+-Avoid database-backed per-row rules such as naive `exists`/`unique` rules for large imports: they reintroduce N+1 queries and still cannot replace database constraints. Use `references()` for batched foreign lookups and duplicate strategies plus the target unique index for business keys.
+-
+-## `Reference`
+-
+-```php
+-Reference::make(
+-    name: 'courses',
+-    model: Course::class,
+-    sourceColumn: 'course_code',
+-    targetColumn: 'code',
+-)
+-    ->value('id')
+-    ->select(['id', 'code'])
+-    ->missing('course_not_found', 'Course does not exist.')
+-    ->scope(fn ($query) => $query->where('active', true));
+-```
+-
+-- `optional()` means a non-empty unresolved value does not automatically fail the row;
+-- `scope()` is constructed inside a job from the definition method and is not accepted from request input;
+-- selected values are available with `ResolvedReferences::get(name, sourceValue)`.
+-
+-## `EloquentTarget`
+-
+-```php
+-EloquentTarget::for(
+-    Student::class,
+-    ['name', 'email', 'course_id', 'updated_at'],
+-    connection: null,
+-);
+-```
+-
+-The host must create the unique index matching `targetUniqueBy()`. The update-column list should not include the business key unless deliberately mutable (mutable business keys are generally unsuitable import identity).
+-
+-Normalize target-key scalar types in `transform()` and define matching Eloquent casts (for example, integer tenant IDs). Hash equality must mirror the database key semantics; application strings, model attributes, and collation cannot be assumed to coerce identically in PHP.
+-
+-## Enums
+-
+-### `ImportMode`
+-
+-- `PARTIAL`
+-- `ATOMIC`
+-
+-### `DuplicateStrategy`
+-
+-- `ERROR`
+-- `SKIP`
+-- `UPDATE`
+-- `UPSERT`
+-
+-### `IdempotencyStrategy`
+-
+-- `REJECT`
+-- `RETURN_EXISTING`
+-- `ALLOW`
+-
+-### `ImportStatus`
+-
+-- `UPLOADED`, `QUEUED`, `VALIDATING`, `PROCESSING`, `FINALIZING`
+-- `COMPLETED`, `COMPLETED_WITH_ERRORS`, `FAILED`, `CANCELLED`
+-
+-## Contracts
+-
+-### `ContextRestorer`
+-
+-```php
+-public function run(array $context, Closure $callback): mixed;
+-```
+-
+-Initialize context, execute the callback, and always teardown in `finally`. It is called before queue jobs query import models.
+-
+-### `ImportAuthorizer`
+-
+-Methods: `canCreate`, `canView`, `canCancel`, `canRetry`, and `scopeVisible`. `scopeVisible` must apply tenant/ownership constraints before request filters.
+-
+-### `SourceReader`
+-
+-Methods: `supports`, `inspect`, and streaming `rows`. `SourceRow::rowNumber` is the physical user-visible row number.
+-
+-Register trusted reader classes in `bulk-imports.readers` and add their extensions/MIME types to the file allowlists. They are resolved from Laravel's container and appended after CSV/XLSX.
+-
+-### `ImportTarget`
+-
+-Methods: target connection, lock scope, batched existing-key hashes, and `write`. Implementations must return exact `BatchWriteResult` counters and rely on a database integrity constraint or an equivalent atomic destination primitive.
+-
+-### `AtomicCommitter`
+-
+-Methods: `connectionName(definition, context)` and `commit(import, definition, context)`. The named connection must resolve to the package metadata connection; the finalizer opens that transaction and the committer must not independently commit. Throwing must leave production unchanged. Cross-database work cannot use package-level atomic mode.
+-
+-## Models
+-
+-### `Import`
+-
+-Important relationships: `chunks`, `failures`, `stagedRows`, and optional polymorphic `actor`. `percentage()` calculates bounded integer progress. Status/mode/strategy/failure stage are enum casts.
+-
+-### `ImportChunk`
+-
+-Immutable source metadata plus mutable state/counters/lease. Host code should not mutate its state directly.
+-
+-### `ImportFailure`
+-
+-One error message with optional original data. A physical source row may have multiple records.
+-
+-## HTTP API
+-
+-### `POST /api/imports`
+-
+-Multipart fields: `type`, `file`, optional `context[...]`, `options[...]`, `idempotency`. Returns 202.
+-
+-Preflight/context validation returns 422. Explicit idempotency `reject` returns 409 with the already-authorized existing import ID/status.
+-
+-### `GET /api/imports`
+-
+-Actor-scoped pagination. Optional exact `status`, `type`, and bounded `per_page` filters.
+-
+-### `GET /api/imports/{import}`
+-
+-Progress and chunk counts. Authorization is mandatory.
+-
+-### `GET /api/imports/{import}/failures`
+-
+-Paginated structured failures. Original data reflects configured redaction/suppression.
+-
+-### `POST /api/imports/{import}/cancel`
+-
+-Cooperative cancellation; does not promise partial rollback.
+-
+-### `POST /api/imports/{import}/retry`
+-
+-202 continuation of failed preparation/chunks/finalizer; completed chunks are not rerun. Invalid state or retry after source/chunk retention cleanup returns 409.
+-
+-### `GET /api/imports/{import}/errors/download`
+-
+-Authorized streamed CSV download, or 404 until generated.
+-
+-### `GET /api/imports/templates/{type}`
+-
+-Returns canonical columns, business key, mode, strategy, and serializable rule descriptions. Applications may generate a UI/download template from this metadata.
+-
+-## Events
+-
+-Events carry scalar snapshots (`importId` / `chunkId`, status, context, and counters); failed events also carry a bounded reason. They deliberately do not use `SerializesModels`, so a queued listener never tries to rehydrate a tenant model before context restoration. Events are integration points; listeners should restore their supplied context before tenant-scoped database work.
+-
+-Use queued listeners for email/websocket/Slack-style side effects. A synchronous listener exception follows normal Laravel semantics and can fail/retry the surrounding operation; durable state/leases keep re-delivery safe, and report dispatch occurs before terminal notification events.
+-
+-- `ImportCreated`
+-- `ImportQueued`
+-- `ImportStarted`
+-- `ImportChunkStarted`
+-- `ImportChunkCompleted`
+-- `ImportChunkFailed`
+-- `ImportProgressUpdated`
+-- `ImportCompleted`
+-- `ImportCompletedWithErrors`
+-- `ImportFailed`
+-- `ImportCancelled`
+-
+-## Commands
+-
+-- `bulk-imports:recover-stale` — redispatch expired preparation, batch-dispatch, chunk, and finalization leases after a grace period;
+-- `bulk-imports:cleanup [--dry-run]` — enforce independent source/chunk and report retention.
+-
+-## Configuration keys
+-
+-Key groups are `definitions`, `readers`, `chunk_size`, `lookup_batch_size`, `queue`, `files`, `failures`, `limits`, `idempotency`, `database`, `context`, `authorization`, `routes`, `atomic`, and `contracts`. See the published config for types/defaults.
++See [api-reference.md](api-reference.md), [ownership](authorization.md), [notifications](notifications.md), and [verification](VERIFICATION.md). The legacy import API remains supported; the current docs describe the shared metadata engine and restored final layer.
+diff --git a/docs/VERIFICATION.md b/docs/VERIFICATION.md
+index da54aae..9e41d5c 100644
+--- a/docs/VERIFICATION.md
++++ b/docs/VERIFICATION.md
+@@ -1,52 +1,37 @@
+-# Verification Record
++# Final verification — 2026-09-06
+ 
+-## Phase 0 repository inspection
++The current live tree contains the restored guest/system access, creator ownership, optional context, notifications, independent-worker concurrency tests and benchmark tooling. It was preserved as a separate checkpoint before finalization. No uploaded or older ZIP was extracted over it.
+ 
+-The supplied workspace contained no application files, `composer.json`, Laravel skeleton, queue/database configuration, service providers, tests, or pre-existing package conventions. There was therefore no host infrastructure to reuse or modify. The implementation was deliberately created as a standalone, auto-discovered Laravel package under `async-bulk-imports/`, with Laravel Testbench providing the isolated host application used by its test suite.
++## Executed release checks
+ 
+-The implementation plan after that inspection was: establish the durable schema/state machine and extension contracts; build upload acceptance and streaming source adapters; add preparation, leases, chunk batching, transactional duplicate-safe writes, progress, finalization, atomic staging, reports, API/authorization/context hooks, operations commands; then add the student example, failure/concurrency tests, and the three requested engineering documents.
++| Command | Result | Evidence |
++| --- | --- | --- |
++| `php vendor/bin/phpunit --exclude-group performance --log-junit verification/phpunit.xml` | **81 tests, 333 assertions; passed** | [tests.log](../verification/tests.log), [JUnit](../verification/phpunit.xml) |
++| `php vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | **No errors**, Larastan/PHPStan level 5 | [phpstan.log](../verification/phpstan.log) |
++| `php vendor/bin/pint --test` | **Passed** | [format-check.log](../verification/format-check.log) |
++| `composer validate --strict` | **composer.json is valid** | [composer.log](../verification/composer.log) |
++| Documentation/source and local-link audit | **49 documents reviewed; no broken local links** | [documentation-audit.json](../verification/documentation-audit.json) |
+ 
+-## Coverage delivered
++The normal full suite is the repository's `composer test` scope, which explicitly excludes the separately opt-in performance group. Its final run took 6.237 seconds and reported 90.50 MiB PHP peak allocation. No 50k performance-group test or benchmark was rerun during this finalization, as requested.
+ 
+-The PHPUnit/Testbench suite covers:
++Runtime: PHP 8.4.25, PHPUnit 11.5.56, Laravel 12.69.1, SQLite. The workspace supplied its PHP binary on PATH and invoked Composer via its local composer.phar; a standard PHP 8.4/Composer installation uses the commands above after `composer install`.
+ 
+-- synchronous import acceptance, storage, 202-oriented queued state, and job dispatch;
+-- fingerprint replay (`return_existing`, actor isolation, and explicit `allow`);
+-- file preflight and mandatory-header import failure;
+-- real OpenSpout XLSX writing/reading through the same pipeline as CSV;
+-- partial validation, missing references, deterministic in-file duplicates, and error reports;
+-- `ERROR`, `SKIP`, `UPDATE`, and `UPSERT` database semantics;
+-- one batched course-reference query for a 1,000-row chunk;
+-- transaction rollback followed by failed-chunk-only retry;
+-- live chunk lease exclusion, preparation-to-batch crash-window lease exclusion, and terminal-chunk-gated finalization;
+-- atomic success, invalid-row withholding, and commit-time duplicate rollback;
+-- invalid state transitions;
+-- actor IDOR protection for detail/failure endpoints;
+-- source-vs-target composite keys with context-injected tenant identity;
+-- cooperative queued cancellation;
+-- failure redaction, row-size bounding, and CSV formula neutralization;
+-- an opt-in generated 50,000-row / 50-chunk scenario with 49,997 successful rows and three failures.
++## Tests present in this archive
+ 
+-## Commands for a PHP-capable environment
++The 81 JUnit entries were checked against their actual source method names. The 81 normal methods in `tests/**/*Test.php` exclude `tests/Large/FiftyThousandStudentsTest.php`. The benchmark harness and explicitly invoked subprocess helper are separate from normal PHPUnit discovery. Prior conversation-only 76/310 totals were not used.
+ 
+-```bash
+-composer install
+-composer test
+-composer test:large
+-vendor/bin/pint --test
+-```
++Coverage includes metadata/header mappings, options, CSV/XLSX imports, generated XLSX dropdown templates, split-sheet re-imports, relations/query counts, durable export revisions, retry/no-op behavior, dry-run/progress counters, user/guest/system ownership, optional tenancy, forged-context rejection, authenticated identity precedence, guest expiry/revocation/cross-guest denial, notifications and failure isolation.
+ 
+-The included GitHub Actions workflow runs the normal suite on PHP 8.4 and Laravel 12 with SQLite, ZIP, mbstring, and fileinfo enabled. The 50,000-row test remains opt-in through `composer test:large` to keep normal feedback bounded.
++The independent-process tests gate two PHP workers against the same import chunk, the same export revision, and separate chunks sharing import progress. They then redeliver jobs and verify committed rows, parts and counters remain correct. The first finalization attempt exposed SQLite lock contention in the separate-chunk case. The subprocess harness now exercises bounded queue-style redelivery for SQLite BUSY/LOCKED errors; other errors are not suppressed. The corrected suite passed. The initial failure log is retained as [tests-initial-attempt.log](../verification/tests-initial-attempt.log). Pint corrected spacing/integer-literal style in the two concurrency test files; no new product feature was added during finalization.
+ 
+-## Checks performed in this workspace
++## Existing performance evidence
+ 
+-This workspace did not provide `php`, `composer`, Docker, or an alternative PHP runtime, so PHPUnit and Pint could not be executed locally. The implementation was instead subjected to the checks available here:
++Five completed earlier runs remain in `benchmarks/results`: 10k CSV, 10k CSV import/XLSX export, 50k CSV, 100k CSV and 500k CSV. No new benchmarks were run. See [performance](performance.md) for exact measurements and methodology. The 1M start-only log has no completed JSON/result and is not cited as a completed benchmark. The 500k run measured 1,932.8 import rows/s and 14,956.7 export rows/s; PHP peaks were 42 MiB and 44.5 MiB respectively, on SQLite/local storage with in-process job execution.
+ 
+-- every PHP file was scanned for balanced delimiters;
+-- `composer.json` was parsed as JSON;
+-- `phpunit.xml` was parsed as XML;
+-- internal namespace/class references and method signature usages were cross-checked;
+-- migrations, configuration, routes, tests, examples, and documentation were manually reconciled;
+-- deprecated PHP 8.4 implicit CSV escape behavior was avoided by supplying the escape argument explicitly.
++Native MySQL/PostgreSQL locking, Redis/Horizon, S3 and host policies/tenant restoration require deployment validation. These checks do not claim production load certification or a strict export snapshot. Remaining boundaries are in [limitations](limitations.md).
+ 
+-This distinction is intentional: the test suite is implemented, but a passing run is not claimed without a PHP runtime. Run the four commands above before publishing a release.
++## Final archive
++
++`nexus-enterprise-import-export-FINAL-v2.zip` is generated from the live tree only after these checks and final documentation updates. It contains source, all migrations/configuration/routes, examples, actual test methods, benchmark tooling and retained results, composer.lock, documentation, logs/JUnit, a fresh checksum inventory and the tracked Git patch. Untracked source is included in full. Vendor/runtime binaries, caches and generated temporary database/spreadsheet fixtures are excluded; run `composer install` after extraction.
++
++The archive tool reads the live files, regenerates `verification/archive-manifest.json`, checks ZIP CRCs and compares every included file against its SHA-256. The separate latest checkpoint remains available for recovery. No package was published and no production database was migrated.
+diff --git a/src/BulkImportServiceProvider.php b/src/BulkImportServiceProvider.php
+index bb954b3..abb8d25 100644
+--- a/src/BulkImportServiceProvider.php
++++ b/src/BulkImportServiceProvider.php
+@@ -4,10 +4,20 @@ namespace Nexus\ImportExport;
+ 
+ use Illuminate\Support\ServiceProvider;
+ use Nexus\ImportExport\Console\CleanupImportsCommand;
++use Nexus\ImportExport\Console\MaintainExportsCommand;
+ use Nexus\ImportExport\Console\RecoverStaleImportsCommand;
++use Nexus\ImportExport\Console\RetryNotificationsCommand;
+ use Nexus\ImportExport\Contracts\ContextRestorer;
++use Nexus\ImportExport\Contracts\CurrentContext;
+ use Nexus\ImportExport\Contracts\ImportAuthorizer;
++use Nexus\ImportExport\Contracts\NotificationRecipientResolver;
+ use Nexus\ImportExport\Contracts\SourceReader;
++use Nexus\ImportExport\Events\ExportChanged;
++use Nexus\ImportExport\Events\ImportCancelled;
++use Nexus\ImportExport\Events\ImportCompleted;
++use Nexus\ImportExport\Events\ImportCompletedWithErrors;
++use Nexus\ImportExport\Events\ImportFailed;
++use Nexus\ImportExport\Notifications\QueueCompletionNotice;
+ use Nexus\ImportExport\Readers\CsvReader;
+ use Nexus\ImportExport\Readers\ReaderRegistry;
+ use Nexus\ImportExport\Readers\XlsxReader;
+@@ -17,6 +27,10 @@ final class BulkImportServiceProvider extends ServiceProvider
+     public function register(): void
+     {
+         $this->mergeConfigFrom(__DIR__.'/../config/bulk-imports.php', 'bulk-imports');
++        $this->mergeConfigFrom(__DIR__.'/../config/import-export.php', 'import-export');
++        $this->app->bind(CurrentContext::class, fn ($app) => $app->make(config('import-export.current_context')));
++
++        $this->app->bind(NotificationRecipientResolver::class, fn ($app) => $app->make(config('import-export.notifications.recipient_resolver')));
+ 
+         $this->app->singleton('bulk-imports', fn (): BulkImportManager => new BulkImportManager);
+         $this->app->alias('bulk-imports', BulkImportManager::class);
+@@ -57,25 +71,31 @@ final class BulkImportServiceProvider extends ServiceProvider
+ 
+     public function boot(): void
+     {
++        foreach ([ImportCompleted::class, ImportCompletedWithErrors::class,
++            ImportFailed::class, ImportCancelled::class, ExportChanged::class] as $event) {
++            $this->app['events']->listen($event, [QueueCompletionNotice::class, 'handle']);
++        }
+         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+ 
++        if (config('import-export.routes.enabled', false)) {
++            $this->loadRoutesFrom(__DIR__.'/../routes/import-export.php');
++        }
++
+         if (config('bulk-imports.routes.enabled', false)) {
+             $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
+         }
+ 
+         if ($this->app->runningInConsole()) {
+-            $this->commands([CleanupImportsCommand::class, RecoverStaleImportsCommand::class]);
++            $this->commands([CleanupImportsCommand::class, RecoverStaleImportsCommand::class, MaintainExportsCommand::class, RetryNotificationsCommand::class]);
+             $this->publishes([
+                 __DIR__.'/../config/bulk-imports.php' => config_path('bulk-imports.php'),
+             ], 'bulk-imports-config');
+-            $this->publishesMigrations([
+-                __DIR__.'/../database/migrations/2026_01_01_000001_create_imports_table.php' => database_path('migrations/2026_01_01_000001_create_imports_table.php'),
+-                __DIR__.'/../database/migrations/2026_01_01_000002_create_import_chunks_table.php' => database_path('migrations/2026_01_01_000002_create_import_chunks_table.php'),
+-                __DIR__.'/../database/migrations/2026_01_01_000003_create_import_failures_table.php' => database_path('migrations/2026_01_01_000003_create_import_failures_table.php'),
+-                __DIR__.'/../database/migrations/2026_01_01_000004_create_import_row_keys_table.php' => database_path('migrations/2026_01_01_000004_create_import_row_keys_table.php'),
+-                __DIR__.'/../database/migrations/2026_01_01_000005_create_import_staged_rows_table.php' => database_path('migrations/2026_01_01_000005_create_import_staged_rows_table.php'),
+-                __DIR__.'/../database/migrations/2026_01_01_000006_create_import_key_locks_table.php' => database_path('migrations/2026_01_01_000006_create_import_key_locks_table.php'),
+-            ], 'bulk-imports-migrations');
++            $this->publishes([__DIR__.'/../config/import-export.php' => config_path('import-export.php')], 'import-export-config');
++            $migrations = [];
++            foreach (glob(__DIR__.'/../database/migrations/*.php') as $file) {
++                $migrations[$file] = database_path('migrations/'.basename($file));
++            }
++            $this->publishesMigrations($migrations, 'bulk-imports-migrations');
+         }
+     }
+ }
+diff --git a/src/Console/CleanupImportsCommand.php b/src/Console/CleanupImportsCommand.php
+index 6384863..7fd094c 100644
+--- a/src/Console/CleanupImportsCommand.php
++++ b/src/Console/CleanupImportsCommand.php
+@@ -50,6 +50,7 @@ final class CleanupImportsCommand extends Command
+                 foreach ($imports as $import) {
+                     if ($dryRun) {
+                         $sourceCount++;
++
+                         continue;
+                     }
+ 
+diff --git a/src/Data/ResolvedReferences.php b/src/Data/ResolvedReferences.php
+index d4f220e..b7f6d56 100644
+--- a/src/Data/ResolvedReferences.php
++++ b/src/Data/ResolvedReferences.php
+@@ -5,7 +5,7 @@ namespace Nexus\ImportExport\Data;
+ final readonly class ResolvedReferences
+ {
+     /** @param array<string, array<string, mixed>> $values */
+-    public function __construct(private array $values = []) {}
++    public function __construct(private array $values = [], private array $ambiguous = []) {}
+ 
+     public function get(string $reference, string|int|null $sourceValue, mixed $default = null): mixed
+     {
+@@ -16,6 +16,11 @@ final readonly class ResolvedReferences
+         return $this->values[$reference][(string) $sourceValue] ?? $default;
+     }
+ 
++    public function isAmbiguous(string $reference, string|int $value): bool
++    {
++        return isset($this->ambiguous[$reference][(string) $value]);
++    }
++
+     public function has(string $reference, string|int|null $sourceValue): bool
+     {
+         return $sourceValue !== null
+diff --git a/src/Data/RowFailure.php b/src/Data/RowFailure.php
+index b636937..640c62e 100644
+--- a/src/Data/RowFailure.php
++++ b/src/Data/RowFailure.php
+@@ -11,5 +11,8 @@ final readonly class RowFailure
+         public string $code,
+         public string $message,
+         public array $row,
++        public ?string $sheet = null,
++        public ?int $sheetRow = null,
++        public ?array $normalized = null,
+     ) {}
+ }
+diff --git a/src/Data/SourceRow.php b/src/Data/SourceRow.php
+index 365105d..8b77c94 100644
+--- a/src/Data/SourceRow.php
++++ b/src/Data/SourceRow.php
+@@ -8,5 +8,7 @@ final readonly class SourceRow
+     public function __construct(
+         public int $rowNumber,
+         public array $data,
++        public ?string $sheet = null,
++        public ?int $sheetRow = null,
+     ) {}
+ }
+diff --git a/src/Definitions/EloquentTarget.php b/src/Definitions/EloquentTarget.php
+index 0486ab9..77ddd3c 100644
+--- a/src/Definitions/EloquentTarget.php
++++ b/src/Definitions/EloquentTarget.php
+@@ -42,8 +42,7 @@ final class EloquentTarget implements ImportTarget
+         array $rows,
+         ImportDefinition $definition,
+         ImportContext $context,
+-    ): array
+-    {
++    ): array {
+         if ($rows === []) {
+             return [];
+         }
+@@ -124,7 +123,7 @@ final class EloquentTarget implements ImportTarget
+                 DuplicateStrategy::UPDATE, DuplicateStrategy::UPSERT => $model->newQuery()->upsert(
+                     $batch,
+                     $uniqueBy,
+-                    $this->updateColumns,
++                    array_values(array_intersect($this->updateColumns, array_keys($batch[0]))),
+                 ),
+             };
+         }
+diff --git a/src/Definitions/ImportDefinition.php b/src/Definitions/ImportDefinition.php
+index 5d4dfd3..299cd6b 100644
+--- a/src/Definitions/ImportDefinition.php
++++ b/src/Definitions/ImportDefinition.php
+@@ -24,6 +24,16 @@ abstract class ImportDefinition
+     /** @return list<string> */
+     abstract public function uniqueBy(): array;
+ 
++    public function requiredColumns(): array
++    {
++        return $this->columns();
++    }
++
++    public function normalize(array $row): array
++    {
++        return $row;
++    }
++
+     public function mode(): ImportMode
+     {
+         return ImportMode::PARTIAL;
+diff --git a/src/Exceptions/AtomicCommitRejected.php b/src/Exceptions/AtomicCommitRejected.php
+index bd3886c..0ddeb24 100644
+--- a/src/Exceptions/AtomicCommitRejected.php
++++ b/src/Exceptions/AtomicCommitRejected.php
+@@ -7,7 +7,7 @@ use RuntimeException;
+ final class AtomicCommitRejected extends RuntimeException
+ {
+     /**
+-     * @param list<array{chunk_id:string,row_number:int,row:array<string,mixed>,column:?string,code:string,message:string}> $failures
++     * @param  list<array{chunk_id:string,row_number:int,row:array<string,mixed>,column:?string,code:string,message:string}>  $failures
+      */
+     public function __construct(public readonly array $failures)
+     {
+diff --git a/src/Exceptions/DuplicateImportException.php b/src/Exceptions/DuplicateImportException.php
+index 8de4019..34c5103 100644
+--- a/src/Exceptions/DuplicateImportException.php
++++ b/src/Exceptions/DuplicateImportException.php
+@@ -2,8 +2,8 @@
+ 
+ namespace Nexus\ImportExport\Exceptions;
+ 
+-use RuntimeException;
+ use Nexus\ImportExport\Models\Import;
++use RuntimeException;
+ 
+ final class DuplicateImportException extends RuntimeException
+ {
+diff --git a/src/Exceptions/RejectRow.php b/src/Exceptions/RejectRow.php
+index bab54c1..80d0754 100644
+--- a/src/Exceptions/RejectRow.php
++++ b/src/Exceptions/RejectRow.php
+@@ -7,7 +7,7 @@ use RuntimeException;
+ final class RejectRow extends RuntimeException
+ {
+     public function __construct(
+-        public readonly string $code,
++        public readonly string $errorCode,
+         string $message,
+         public readonly ?string $column = null,
+     ) {
+diff --git a/src/Http/Controllers/ImportController.php b/src/Http/Controllers/ImportController.php
+index 108a6aa..15962d9 100644
+--- a/src/Http/Controllers/ImportController.php
++++ b/src/Http/Controllers/ImportController.php
+@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
+ use Illuminate\Http\Request;
+ use Illuminate\Routing\Controller;
+ use Nexus\ImportExport\Contracts\ImportAuthorizer;
++use Nexus\ImportExport\Definitions\DataDefinition;
+ use Nexus\ImportExport\Enums\ChunkStatus;
+ use Nexus\ImportExport\Enums\IdempotencyStrategy;
+ use Nexus\ImportExport\Exceptions\DuplicateImportException;
+@@ -19,6 +20,8 @@ use Nexus\ImportExport\Http\Resources\ImportResource;
+ use Nexus\ImportExport\Models\Import;
+ use Nexus\ImportExport\Services\CancelImport;
+ use Nexus\ImportExport\Services\ContextNormalizer;
++use Nexus\ImportExport\Services\DataAccess;
++use Nexus\ImportExport\Services\DataDescription;
+ use Nexus\ImportExport\Services\ImportDefinitionRegistry;
+ use Nexus\ImportExport\Services\ImportDispatcher;
+ use Nexus\ImportExport\Services\RetryImport;
+@@ -74,6 +77,7 @@ final class ImportController extends Controller
+     public function show(Request $request, Import $import): ImportResource
+     {
+         $this->assertAllowed($this->authorizer->canView($request->user(), $import));
++
+         return new ImportResource($this->findWithChunkCounts($import->id));
+     }
+ 
+@@ -124,7 +128,7 @@ final class ImportController extends Controller
+         return $filesystems->disk($import->error_report_disk)->download(
+             $import->error_report_path,
+             "import-{$import->id}-errors.csv",
+-            ['Content-Type' => 'text/csv; charset=UTF-8', 'X-Content-Type-Options' => 'nosniff'],
++            ['Content-Type' => 'text/csv; charset=UTF-8', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store'],
+         );
+     }
+ 
+@@ -142,6 +146,17 @@ final class ImportController extends Controller
+         }
+         $this->assertAllowed($this->authorizer->canCreate($request->user(), $type, $context));
+         $definition = $definitions->make($type);
++        if ($definition instanceof DataDefinition) {
++            $access = app(DataAccess::class);
++            if ($request->exists('context') && $context !== $access->context()) {
++                throw new AuthorizationException('Context is server-controlled.');
++            }
++            $definition = $access->definition($type);
++            $access->assertActor($definition, $request->user(), $type);
++            $access->check($definition->canDownloadTemplate($request->user()));
++
++            return response()->json(['data' => app(DataDescription::class)->describe($definition, $request->user())]);
++        }
+ 
+         return response()->json(['data' => [
+             'type' => $type,
+diff --git a/src/Http/Resources/ImportFailureResource.php b/src/Http/Resources/ImportFailureResource.php
+index e79022d..4f90b03 100644
+--- a/src/Http/Resources/ImportFailureResource.php
++++ b/src/Http/Resources/ImportFailureResource.php
+@@ -4,8 +4,9 @@ namespace Nexus\ImportExport\Http\Resources;
+ 
+ use Illuminate\Http\Request;
+ use Illuminate\Http\Resources\Json\JsonResource;
++use Nexus\ImportExport\Models\ImportFailure;
+ 
+-/** @mixin \Nexus\ImportExport\Models\ImportFailure */
++/** @mixin ImportFailure */
+ final class ImportFailureResource extends JsonResource
+ {
+     public function toArray(Request $request): array
+@@ -13,6 +14,8 @@ final class ImportFailureResource extends JsonResource
+         return [
+             'id' => $this->id,
+             'rowNumber' => $this->row_number,
++            'sheet' => $this->sheet, 'sheetRow' => $this->sheet_row, 'failureType' => $this->failure_type,
++            'normalizedRowData' => $this->normalized_row_data,
+             'column' => $this->column,
+             'errorCode' => $this->error_code,
+             'errorMessage' => $this->error_message,
+diff --git a/src/Http/Resources/ImportResource.php b/src/Http/Resources/ImportResource.php
+index 383b58f..b96d9f0 100644
+--- a/src/Http/Resources/ImportResource.php
++++ b/src/Http/Resources/ImportResource.php
+@@ -4,8 +4,9 @@ namespace Nexus\ImportExport\Http\Resources;
+ 
+ use Illuminate\Http\Request;
+ use Illuminate\Http\Resources\Json\JsonResource;
++use Nexus\ImportExport\Models\Import;
+ 
+-/** @mixin \Nexus\ImportExport\Models\Import */
++/** @mixin Import */
+ final class ImportResource extends JsonResource
+ {
+     public function toArray(Request $request): array
+@@ -24,6 +25,9 @@ final class ImportResource extends JsonResource
+                 'failedRows' => $this->failed_rows,
+                 'skippedRows' => $this->skipped_rows,
+                 'stagedRows' => $this->staged_rows,
++                'insertedRows' => $this->inserted_rows, 'updatedRows' => $this->updated_rows,
++                'wouldInsert' => $this->would_insert, 'wouldUpdate' => $this->would_update,
++                'processedChunks' => $this->processed_chunks,
+                 'percentage' => $this->percentage(),
+             ],
+             'chunks' => [
+@@ -36,6 +40,7 @@ final class ImportResource extends JsonResource
+             ],
+             'error' => $this->when($this->error_message !== null, [
+                 'stage' => $this->failure_stage?->value,
++                'type' => $this->failure_type,
+                 'message' => $this->error_message,
+             ]),
+             'errorReportAvailable' => $this->error_report_path !== null,
+diff --git a/src/Jobs/FinalizeImportJob.php b/src/Jobs/FinalizeImportJob.php
+index bcebca1..b43131e 100644
+--- a/src/Jobs/FinalizeImportJob.php
++++ b/src/Jobs/FinalizeImportJob.php
+@@ -13,8 +13,8 @@ use Nexus\ImportExport\Enums\FailureStage;
+ use Nexus\ImportExport\Enums\ImportStatus;
+ use Nexus\ImportExport\Events\ImportFailed;
+ use Nexus\ImportExport\Models\Import;
+-use Nexus\ImportExport\Services\FinalizeImport;
+ use Nexus\ImportExport\Services\ErrorReportDispatcher;
++use Nexus\ImportExport\Services\FinalizeImport;
+ use Nexus\ImportExport\Services\ImportLeaseManager;
+ use Nexus\ImportExport\State\ImportStateMachine;
+ use Throwable;
+diff --git a/src/Jobs/PrepareImportJob.php b/src/Jobs/PrepareImportJob.php
+index 59a9b18..fca1711 100644
+--- a/src/Jobs/PrepareImportJob.php
++++ b/src/Jobs/PrepareImportJob.php
+@@ -12,6 +12,7 @@ use Nexus\ImportExport\Contracts\ContextRestorer;
+ use Nexus\ImportExport\Enums\FailureStage;
+ use Nexus\ImportExport\Enums\ImportStatus;
+ use Nexus\ImportExport\Events\ImportFailed;
++use Nexus\ImportExport\Exceptions\FileValidationException;
+ use Nexus\ImportExport\Exceptions\ImportCancelledSignal;
+ use Nexus\ImportExport\Models\Import;
+ use Nexus\ImportExport\Services\ImportLeaseManager;
+@@ -90,6 +91,7 @@ final class PrepareImportJob implements ShouldQueue
+             $reason = Str::limit($exception?->getMessage() ?? 'Preparation failed.', 4000);
+             $import = app(ImportStateMachine::class)->transition($import, ImportStatus::FAILED, [
+                 'failure_stage' => FailureStage::PREPARATION->value,
++                'failure_type' => $exception instanceof FileValidationException ? (isset($exception->errors['headers']) ? 'structure_error' : 'file_error') : 'system_error',
+                 'error_message' => $reason,
+                 'failed_at' => now(),
+                 'lease_token' => null,
+diff --git a/src/Models/Import.php b/src/Models/Import.php
+index 84f227d..4b49a4a 100644
+--- a/src/Models/Import.php
++++ b/src/Models/Import.php
+@@ -2,6 +2,8 @@
+ 
+ namespace Nexus\ImportExport\Models;
+ 
++use Carbon\Carbon;
++use Carbon\CarbonImmutable;
+ use Illuminate\Database\Eloquent\Concerns\HasUlids;
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Relations\HasMany;
+@@ -12,6 +14,59 @@ use Nexus\ImportExport\Enums\ImportMode;
+ use Nexus\ImportExport\Enums\ImportStatus;
+ use Nexus\ImportExport\Models\Concerns\UsesBulkImportConnection;
+ 
++/**
++ * @property string $id
++ * @property string $type
++ * @property string $definition
++ * @property string $definition_version
++ * @property string $original_filename
++ * @property string $disk
++ * @property string $file_path
++ * @property string $file_hash
++ * @property string $fingerprint
++ * @property string $deduplication_key
++ * @property ImportStatus $status
++ * @property ImportMode $mode
++ * @property DuplicateStrategy $duplicate_strategy
++ * @property int $total_rows
++ * @property int $processed_rows
++ * @property int $succeeded_rows
++ * @property int $failed_rows
++ * @property int $skipped_rows
++ * @property int $staged_rows
++ * @property int $total_chunks
++ * @property string|null $actor_type
++ * @property string|null $actor_id
++ * @property array|null $context
++ * @property string $context_hash
++ * @property array|null $options
++ * @property CarbonImmutable|null $preparation_dispatched_at
++ * @property string|null $queue_batch_id
++ * @property CarbonImmutable|null $batch_dispatched_at
++ * @property int $attempts
++ * @property FailureStage|null $failure_stage
++ * @property string|null $error_message
++ * @property string|null $error_report_disk
++ * @property string|null $error_report_path
++ * @property string|null $lease_token
++ * @property CarbonImmutable|null $lease_expires_at
++ * @property CarbonImmutable|null $started_at
++ * @property CarbonImmutable|null $completed_at
++ * @property CarbonImmutable|null $failed_at
++ * @property CarbonImmutable|null $cancel_requested_at
++ * @property CarbonImmutable|null $cancelled_at
++ * @property CarbonImmutable|null $files_cleanup_started_at
++ * @property CarbonImmutable|null $files_deleted_at
++ * @property CarbonImmutable|null $failure_records_deleted_at
++ * @property Carbon $created_at
++ * @property Carbon $updated_at
++ * @property int $inserted_rows
++ * @property int $updated_rows
++ * @property int $would_insert
++ * @property int $would_update
++ * @property int $processed_chunks
++ * @property string|null $failure_type
++ */
+ class Import extends Model
+ {
+     use HasUlids;
+@@ -35,6 +90,7 @@ class Import extends Model
+             'options' => 'array',
+             'total_rows' => 'integer',
+             'processed_rows' => 'integer',
++            'inserted_rows' => 'integer', 'updated_rows' => 'integer', 'would_insert' => 'integer', 'would_update' => 'integer', 'processed_chunks' => 'integer',
+             'succeeded_rows' => 'integer',
+             'failed_rows' => 'integer',
+             'skipped_rows' => 'integer',
+diff --git a/src/Models/ImportChunk.php b/src/Models/ImportChunk.php
+index 6f6ece2..fdc3835 100644
+--- a/src/Models/ImportChunk.php
++++ b/src/Models/ImportChunk.php
+@@ -2,6 +2,8 @@
+ 
+ namespace Nexus\ImportExport\Models;
+ 
++use Carbon\Carbon;
++use Carbon\CarbonImmutable;
+ use Illuminate\Database\Eloquent\Concerns\HasUlids;
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Relations\BelongsTo;
+@@ -9,6 +11,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
+ use Nexus\ImportExport\Enums\ChunkStatus;
+ use Nexus\ImportExport\Models\Concerns\UsesBulkImportConnection;
+ 
++/**
++ * @property string $id
++ * @property string $import_id
++ * @property int $chunk_number
++ * @property int $start_row
++ * @property int $end_row
++ * @property string $disk
++ * @property string $file_path
++ * @property string $checksum
++ * @property ChunkStatus $status
++ * @property int $total_rows
++ * @property int $processed_rows
++ * @property int $succeeded_rows
++ * @property int $failed_rows
++ * @property int $skipped_rows
++ * @property int $staged_rows
++ * @property int $attempts
++ * @property string|null $lease_token
++ * @property CarbonImmutable|null $lease_expires_at
++ * @property CarbonImmutable|null $last_heartbeat_at
++ * @property CarbonImmutable|null $started_at
++ * @property CarbonImmutable|null $completed_at
++ * @property CarbonImmutable|null $failed_at
++ * @property string|null $error_message
++ * @property Carbon $created_at
++ * @property Carbon $updated_at
++ * @property int $inserted_rows
++ * @property int $updated_rows
++ * @property int $would_insert
++ * @property int $would_update
++ * @property Import $import
++ */
+ class ImportChunk extends Model
+ {
+     use HasUlids;
+@@ -30,6 +64,7 @@ class ImportChunk extends Model
+             'end_row' => 'integer',
+             'total_rows' => 'integer',
+             'processed_rows' => 'integer',
++            'inserted_rows' => 'integer', 'updated_rows' => 'integer', 'would_insert' => 'integer', 'would_update' => 'integer',
+             'succeeded_rows' => 'integer',
+             'failed_rows' => 'integer',
+             'skipped_rows' => 'integer',
+@@ -43,6 +78,7 @@ class ImportChunk extends Model
+         ];
+     }
+ 
++    /** @return BelongsTo<Import, $this> */
+     public function import(): BelongsTo
+     {
+         return $this->belongsTo(Import::class);
+diff --git a/src/Models/ImportFailure.php b/src/Models/ImportFailure.php
+index c06a136..d7a9e39 100644
+--- a/src/Models/ImportFailure.php
++++ b/src/Models/ImportFailure.php
+@@ -2,11 +2,30 @@
+ 
+ namespace Nexus\ImportExport\Models;
+ 
++use Carbon\Carbon;
+ use Illuminate\Database\Eloquent\Concerns\HasUlids;
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Relations\BelongsTo;
+ use Nexus\ImportExport\Models\Concerns\UsesBulkImportConnection;
+ 
++/**
++ * @property string $id
++ * @property string $import_id
++ * @property string|null $import_chunk_id
++ * @property int|null $row_number
++ * @property string|null $column
++ * @property string $error_code
++ * @property string $error_message
++ * @property array|null $original_row_data
++ * @property bool $redacted
++ * @property Carbon $created_at
++ * @property Carbon $updated_at
++ * @property string|null $sheet
++ * @property int|null $sheet_row
++ * @property array|null $normalized_row_data
++ * @property string $failure_type
++ * @property Import $import
++ */
+ class ImportFailure extends Model
+ {
+     use HasUlids;
+@@ -24,15 +43,19 @@ class ImportFailure extends Model
+         return [
+             'row_number' => 'integer',
+             'original_row_data' => 'array',
++            'normalized_row_data' => 'array',
++            'sheet_row' => 'integer',
+             'redacted' => 'boolean',
+         ];
+     }
+ 
++    /** @return BelongsTo<Import, $this> */
+     public function import(): BelongsTo
+     {
+         return $this->belongsTo(Import::class);
+     }
+ 
++    /** @return BelongsTo<ImportChunk, $this> */
+     public function chunk(): BelongsTo
+     {
+         return $this->belongsTo(ImportChunk::class, 'import_chunk_id');
+diff --git a/src/Models/ImportRowKey.php b/src/Models/ImportRowKey.php
+index dea1872..90347d3 100644
+--- a/src/Models/ImportRowKey.php
++++ b/src/Models/ImportRowKey.php
+@@ -2,11 +2,22 @@
+ 
+ namespace Nexus\ImportExport\Models;
+ 
++use Carbon\Carbon;
+ use Illuminate\Database\Eloquent\Concerns\HasUlids;
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Relations\BelongsTo;
+ use Nexus\ImportExport\Models\Concerns\UsesBulkImportConnection;
+ 
++/**
++ * @property string $id
++ * @property string $import_id
++ * @property string|null $first_chunk_id
++ * @property string $key_hash
++ * @property int $first_row_number
++ * @property Carbon $created_at
++ * @property Carbon $updated_at
++ * @property Import $import
++ */
+ class ImportRowKey extends Model
+ {
+     use HasUlids;
+@@ -24,6 +35,7 @@ class ImportRowKey extends Model
+         return ['first_row_number' => 'integer'];
+     }
+ 
++    /** @return BelongsTo<Import, $this> */
+     public function import(): BelongsTo
+     {
+         return $this->belongsTo(Import::class);
+diff --git a/src/Models/ImportStagedRow.php b/src/Models/ImportStagedRow.php
+index 11cfd99..adb4ed3 100644
+--- a/src/Models/ImportStagedRow.php
++++ b/src/Models/ImportStagedRow.php
+@@ -2,11 +2,24 @@
+ 
+ namespace Nexus\ImportExport\Models;
+ 
++use Carbon\Carbon;
+ use Illuminate\Database\Eloquent\Concerns\HasUlids;
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Relations\BelongsTo;
+ use Nexus\ImportExport\Models\Concerns\UsesBulkImportConnection;
+ 
++/**
++ * @property string $id
++ * @property string $import_id
++ * @property string $import_chunk_id
++ * @property int $row_number
++ * @property string|null $business_key_hash
++ * @property array $source_data
++ * @property array $payload
++ * @property Carbon $created_at
++ * @property Carbon $updated_at
++ * @property Import $import
++ */
+ class ImportStagedRow extends Model
+ {
+     use HasUlids;
+@@ -28,11 +41,13 @@ class ImportStagedRow extends Model
+         ];
+     }
+ 
++    /** @return BelongsTo<Import, $this> */
+     public function import(): BelongsTo
+     {
+         return $this->belongsTo(Import::class);
+     }
+ 
++    /** @return BelongsTo<ImportChunk, $this> */
+     public function chunk(): BelongsTo
+     {
+         return $this->belongsTo(ImportChunk::class, 'import_chunk_id');
+diff --git a/src/Readers/CsvReader.php b/src/Readers/CsvReader.php
+index 22c53c7..8e3e16d 100644
+--- a/src/Readers/CsvReader.php
++++ b/src/Readers/CsvReader.php
+@@ -48,8 +48,11 @@ final class CsvReader implements SourceReader
+             $header = $this->normalizeHeader($headerRecord['values']);
+             $physicalRow = $headerRecord['row_number'];
+ 
+-            while (($values = fgetcsv($stream, null, $delimiter, '"', '')) !== false) {
++            while (($values = $this->record($stream, $delimiter)) !== null) {
+                 $physicalRow++;
++                if (count($values) > count($header)) {
++                    throw new FileValidationException(['headers' => ['A CSV row contains more values than headers.']]);
++                }
+                 $values = array_pad($values, count($header), null);
+                 $values = array_slice($values, 0, count($header));
+ 
+@@ -74,7 +77,7 @@ final class CsvReader implements SourceReader
+         }
+ 
+         $sample = '';
+-        while (($line = fgets($stream)) !== false) {
++        while (($line = fgets($stream, (int) config('bulk-imports.limits.max_csv_record_bytes', 2097152) + 2)) !== false) {
+             if (trim($line) !== '') {
+                 $sample = $line;
+                 break;
+@@ -92,6 +95,32 @@ final class CsvReader implements SourceReader
+         return [$stream, $delimiter];
+     }
+ 
++    /** Bounded RFC 4180 records, including embedded newlines. */
++    private function record($stream, string $delimiter): ?array
++    {
++        $max = (int) config('bulk-imports.limits.max_csv_record_bytes', 2097152);
++        $record = '';
++        do {
++            $line = fgets($stream, $max + 2);
++            if ($line === false) {
++                if ($record === '') {
++                    return null;
++                }
++                throw new FileValidationException(['file' => ['Unclosed quoted CSV record.']]);
++            }
++            $record .= $line;
++            if (strlen($record) > $max) {
++                throw new FileValidationException(['file' => ['CSV record exceeds its byte limit.']]);
++            }
++        } while (substr_count($record, '"') % 2 !== 0);
++        $values = str_getcsv($record, $delimiter, '"', '');
++        if (count($values) > (int) config('bulk-imports.limits.max_columns', 250)) {
++            throw new FileValidationException(['file' => ['Too many CSV columns.']]);
++        }
++
++        return $values;
++    }
++
+     private function detectDelimiter(string $line): string
+     {
+         $scores = [];
+@@ -108,7 +137,7 @@ final class CsvReader implements SourceReader
+     private function nextNonEmptyRecord($stream, string $delimiter): ?array
+     {
+         $rowNumber = 0;
+-        while (($row = fgetcsv($stream, null, $delimiter, '"', '')) !== false) {
++        while (($row = $this->record($stream, $delimiter)) !== null) {
+             $rowNumber++;
+             if (! $this->isEmpty($row)) {
+                 return ['values' => $row, 'row_number' => $rowNumber];
+diff --git a/src/Readers/XlsxReader.php b/src/Readers/XlsxReader.php
+index 35525d3..1270623 100644
+--- a/src/Readers/XlsxReader.php
++++ b/src/Readers/XlsxReader.php
+@@ -6,6 +6,7 @@ use Nexus\ImportExport\Contracts\SourceReader;
+ use Nexus\ImportExport\Data\FileInspection;
+ use Nexus\ImportExport\Data\SourceRow;
+ use Nexus\ImportExport\Exceptions\FileValidationException;
++use Nexus\ImportExport\Support\Header;
+ use OpenSpout\Reader\XLSX\Options;
+ use OpenSpout\Reader\XLSX\Reader;
+ 
+@@ -28,9 +29,14 @@ final class XlsxReader implements SourceReader
+             $reader = $this->newReader();
+             $reader->open($localPath);
+ 
++            $ordinal = 1;
++            $expectedHeader = null;
+             try {
+                 foreach ($reader->getSheetIterator() as $sheet) {
+-                    if ($worksheet !== null && $sheet->getName() !== $worksheet) {
++                    if ($worksheet === '*' && in_array($sheet->getName(), ['Instructions', '__options'], true)) {
++                        continue;
++                    }
++                    if ($worksheet !== null && $worksheet !== '*' && $sheet->getName() !== $worksheet) {
+                         continue;
+                     }
+ 
+@@ -62,9 +68,14 @@ final class XlsxReader implements SourceReader
+             $reader = $this->newReader();
+             $reader->open($localPath);
+ 
++            $ordinal = 1;
++            $expectedHeader = null;
+             try {
+                 foreach ($reader->getSheetIterator() as $sheet) {
+-                    if ($worksheet !== null && $sheet->getName() !== $worksheet) {
++                    if ($worksheet === '*' && in_array($sheet->getName(), ['Instructions', '__options'], true)) {
++                        continue;
++                    }
++                    if ($worksheet !== null && $worksheet !== '*' && $sheet->getName() !== $worksheet) {
+                         continue;
+                     }
+ 
+@@ -80,6 +91,14 @@ final class XlsxReader implements SourceReader
+                                 continue;
+                             }
+                             $header = $this->normalizeHeader($values);
++                            if (count(array_unique($header)) !== count($header)) {
++                                throw new FileValidationException(['headers' => ['Duplicate worksheet headers.']]);
++                            }
++                            if ($expectedHeader !== null && array_map(Header::normalize(...), $expectedHeader) !== array_map(Header::normalize(...), $header)) {
++                                throw new FileValidationException(['headers' => ['Data worksheets must have identical headers; child-resource sheets are unsupported.']]);
++                            }
++                            $expectedHeader = $header;
++
+                             continue;
+                         }
+ 
+@@ -87,12 +106,15 @@ final class XlsxReader implements SourceReader
+                             continue;
+                         }
+ 
++                        if (count($values) > count($header) && ! $this->isEmpty(array_slice($values, count($header)))) {
++                            throw new FileValidationException(['headers' => ['A worksheet row contains values beyond its headers.']]);
++                        }
+                         $values = array_pad($values, count($header), null);
+                         $values = array_slice($values, 0, count($header));
+-                        yield new SourceRow($physicalRow, array_combine($header, $values));
++                        yield new SourceRow($worksheet === '*' ? ++$ordinal : $physicalRow, array_combine($header, $values), $sheet->getName(), $physicalRow);
+                     }
+ 
+-                    if ($header !== null) {
++                    if ($header !== null && $worksheet !== '*') {
+                         return;
+                     }
+                 }
+diff --git a/src/Readers/XlsxSecurityInspector.php b/src/Readers/XlsxSecurityInspector.php
+index 9102dd8..6e6b98b 100644
+--- a/src/Readers/XlsxSecurityInspector.php
++++ b/src/Readers/XlsxSecurityInspector.php
+@@ -33,6 +33,10 @@ final class XlsxSecurityInspector
+                     continue;
+                 }
+ 
++                $name = str_replace('\\', '/', $stat['name']);
++                if (str_starts_with($name, '/') || preg_match('#(^|/)\.\.(/|$)#', $name) || str_contains($name, ':') || str_contains($name, chr(0))) {
++                    throw new FileValidationException(['file' => ['Unsafe XLSX archive path.']]);
++                }
+                 $totalCompressed += max(1, (int) ($stat['comp_size'] ?? 0));
+                 $totalUncompressed += (int) ($stat['size'] ?? 0);
+ 
+diff --git a/src/Services/ActorImportAuthorizer.php b/src/Services/ActorImportAuthorizer.php
+index 3e85ac1..a9bb2ab 100644
+--- a/src/Services/ActorImportAuthorizer.php
++++ b/src/Services/ActorImportAuthorizer.php
+@@ -2,9 +2,14 @@
+ 
+ namespace Nexus\ImportExport\Services;
+ 
++use Illuminate\Auth\Access\AuthorizationException;
+ use Illuminate\Database\Eloquent\Builder;
++use Nexus\ImportExport\Auth\GuestAccess;
++use Nexus\ImportExport\Auth\GuestPrincipal;
+ use Nexus\ImportExport\Contracts\ImportAuthorizer;
++use Nexus\ImportExport\Definitions\DataDefinition;
+ use Nexus\ImportExport\Models\Import;
++use Nexus\ImportExport\Support\CanonicalJson;
+ 
+ final class ActorImportAuthorizer implements ImportAuthorizer
+ {
+@@ -16,6 +21,17 @@ final class ActorImportAuthorizer implements ImportAuthorizer
+     public function canView(?object $actor, Import $import): bool
+     {
+         $identity = $this->identity($actor);
++        if (is_subclass_of($import->definition, DataDefinition::class)) {
++            try {
++                app(DataAccess::class)->assertActor(app(DataAccess::class)->definition($import->type), $actor, $import->type);
++            } catch (AuthorizationException) {
++                return false;
++            }
++            $context = app(DataAccess::class)->context();
++            if (! hash_equals($import->context_hash, hash('sha256', CanonicalJson::encode($context)))) {
++                return false;
++            }
++        }
+ 
+         return $identity !== null
+             && hash_equals((string) $import->actor_type, $identity['type'])
+@@ -35,6 +51,9 @@ final class ActorImportAuthorizer implements ImportAuthorizer
+     public function scopeVisible(Builder $query, ?object $actor): Builder
+     {
+         $identity = $this->identity($actor);
++        if ($actor instanceof GuestPrincipal && ! app(GuestAccess::class)->valid($actor)) {
++            return $query->whereRaw('1 = 0');
++        }
+ 
+         if ($identity === null) {
+             return $query->whereRaw('1 = 0');
+@@ -42,7 +61,8 @@ final class ActorImportAuthorizer implements ImportAuthorizer
+ 
+         return $query
+             ->where('actor_type', $identity['type'])
+-            ->where('actor_id', $identity['id']);
++            ->where('actor_id', $identity['id'])
++            ->where('context_hash', app(DataAccess::class)->contextHash());
+     }
+ 
+     /** @return null|array{type:string,id:string} */
+diff --git a/src/Services/BusinessKeyLockManager.php b/src/Services/BusinessKeyLockManager.php
+index c0cdf4a..d1a3041 100644
+--- a/src/Services/BusinessKeyLockManager.php
++++ b/src/Services/BusinessKeyLockManager.php
+@@ -12,7 +12,7 @@ final class BusinessKeyLockManager
+      * Acquire transaction-scoped logical locks. Must be called inside a transaction;
+      * release() deletes them before commit. A rollback also removes every lock.
+      *
+-     * @param list<string> $keyHashes
++     * @param  list<string>  $keyHashes
+      */
+     public function acquire(string $connection, string $scope, array $keyHashes, string $importId): void
+     {
+diff --git a/src/Services/ChunkCompletion.php b/src/Services/ChunkCompletion.php
+index 314d252..374195e 100644
+--- a/src/Services/ChunkCompletion.php
++++ b/src/Services/ChunkCompletion.php
+@@ -17,6 +17,10 @@ final class ChunkCompletion
+         int $failed,
+         int $skipped,
+         int $staged,
++        int $inserted = 0,
++        int $updatedRows = 0,
++        int $wouldInsert = 0,
++        int $wouldUpdate = 0,
+     ): ImportChunk {
+         $updated = ImportChunk::query()
+             ->whereKey($chunk->id)
+@@ -29,6 +33,8 @@ final class ChunkCompletion
+                 'failed_rows' => $failed,
+                 'skipped_rows' => $skipped,
+                 'staged_rows' => $staged,
++                'inserted_rows' => $inserted, 'updated_rows' => $updatedRows,
++                'would_insert' => $wouldInsert, 'would_update' => $wouldUpdate,
+                 'lease_token' => null,
+                 'lease_expires_at' => null,
+                 'completed_at' => now(),
+@@ -47,6 +53,11 @@ final class ChunkCompletion
+             'failed_rows' => new Expression('failed_rows + '.(int) $failed),
+             'skipped_rows' => new Expression('skipped_rows + '.(int) $skipped),
+             'staged_rows' => new Expression('staged_rows + '.(int) $staged),
++            'inserted_rows' => new Expression('inserted_rows + '.(int) $inserted),
++            'updated_rows' => new Expression('updated_rows + '.(int) $updatedRows),
++            'would_insert' => new Expression('would_insert + '.(int) $wouldInsert),
++            'would_update' => new Expression('would_update + '.(int) $wouldUpdate),
++            'processed_chunks' => new Expression('processed_chunks + 1'),
+             'updated_at' => now(),
+         ]);
+ 
+diff --git a/src/Services/ChunkFileStore.php b/src/Services/ChunkFileStore.php
+index ee1852b..57b7168 100644
+--- a/src/Services/ChunkFileStore.php
++++ b/src/Services/ChunkFileStore.php
+@@ -10,7 +10,7 @@ final class ChunkFileStore
+     public function __construct(private readonly FilesystemManager $filesystems) {}
+ 
+     /**
+-     * @param list<array{row_number:int,data:array<string,mixed>,business_key_hash:?string,duplicate_of_row:?int}> $rows
++     * @param  list<array{row_number:int,data:array<string,mixed>,business_key_hash:?string,duplicate_of_row:?int}>  $rows
+      * @return array{path:string, checksum:string}
+      */
+     public function write(string $disk, string $importId, int $chunkNumber, array $rows): array
+diff --git a/src/Services/ChunkProcessor.php b/src/Services/ChunkProcessor.php
+index 4692a1e..eb8e40a 100644
+--- a/src/Services/ChunkProcessor.php
++++ b/src/Services/ChunkProcessor.php
+@@ -4,10 +4,13 @@ namespace Nexus\ImportExport\Services;
+ 
+ use Illuminate\Contracts\Validation\Factory as ValidatorFactory;
+ use Illuminate\Database\DatabaseManager;
++use Illuminate\Support\Facades\Log;
+ use Illuminate\Support\Str;
+ use Nexus\ImportExport\Data\BatchWriteResult;
+ use Nexus\ImportExport\Data\ImportContext;
++use Nexus\ImportExport\Data\ResolvedReferences;
+ use Nexus\ImportExport\Data\RowFailure;
++use Nexus\ImportExport\Definitions\DataDefinition;
+ use Nexus\ImportExport\Definitions\ImportDefinition;
+ use Nexus\ImportExport\Definitions\Reference;
+ use Nexus\ImportExport\Enums\ChunkStatus;
+@@ -42,9 +45,16 @@ final class ChunkProcessor
+ 
+     public function handle(ImportChunk $chunk, string $leaseToken): void
+     {
++        $started = microtime(true);
+         $import = $chunk->import()->firstOrFail();
+         $this->assertNotCancelled($import);
+         $definition = $this->definitions->make($import->type);
++        if ($definition instanceof DataDefinition) {
++            $definition->inContext($import->context ?? []);
++        }
++        if ($definition->version() !== $import->definition_version) {
++            throw new RuntimeException('Definition version changed.');
++        }
+         $context = new ImportContext(
+             $import->id,
+             $import->actor_type,
+@@ -62,35 +72,45 @@ final class ChunkProcessor
+             throw new RuntimeException('Prepared chunk row count does not match its metadata.');
+         }
+ 
+-        [$candidates, $failures] = $this->validateRows($envelopes, $definition, $context);
++        [$candidates, $failures, $sourceSkipped] = $this->validateRows($envelopes, $definition, $context);
++        $validationDone = microtime(true);
++        $referenceDefinitions = $definition->references();
+         $resolved = $this->references->resolve(
+-            $definition->references(),
++            $referenceDefinitions,
+             array_column($candidates, 'source'),
+         );
++        $relationDone = microtime(true);
+         $transformed = [];
+ 
+         foreach ($candidates as $candidate) {
+             $referenceFailure = $this->missingReference(
+                 $candidate['row_number'],
+                 $candidate['source'],
+-                $definition->references(),
++                $referenceDefinitions,
+                 $resolved,
+             );
+             if ($referenceFailure !== null) {
+                 $failures[] = $referenceFailure;
++
+                 continue;
+             }
+ 
+             try {
+                 $payload = $definition->transform($candidate['source'], $resolved, $context);
+             } catch (RejectRow $exception) {
++                if ($exception->errorCode === 'skip_row') {
++                    $sourceSkipped++;
++
++                    continue;
++                }
+                 $failures[] = new RowFailure(
+                     $candidate['row_number'],
+                     $exception->column,
+-                    $exception->code,
++                    $exception->errorCode,
+                     $exception->getMessage(),
+                     $candidate['source'],
+                 );
++
+                 continue;
+             }
+             $this->assertCompleteBusinessKey($payload, $definition);
+@@ -117,15 +137,17 @@ final class ChunkProcessor
+             $import,
+             $definition,
+             $context,
+-            $target,
+             $transformed,
+             $failures,
++            $sourceSkipped,
++            $envelopes,
+         ): array {
+             $attemptFailures = $failures;
+             $this->assertNotCancelled($import->fresh());
+ 
+             $succeeded = 0;
+-            $skipped = 0;
++            $skipped = $sourceSkipped;
++            $inserted = $updatedRows = $wouldInsert = $wouldUpdate = 0;
+             $staged = 0;
+ 
+             if ($definition->mode() === ImportMode::ATOMIC) {
+@@ -142,15 +164,25 @@ final class ChunkProcessor
+                 $skipped += $preWriteSkipped;
+ 
+                 try {
+-                    $result = $definition->handleBatch(array_column($writeRows, 'payload'), $context);
+-                    if (! $result instanceof BatchWriteResult) {
+-                        throw new ImportConfigurationException($definition::class.'::handleBatch() must return BatchWriteResult.');
++                    foreach ($writeRows as $row) {
++                        if ($row['existed'] ?? false) {
++                            $wouldUpdate++;
++                        } else {
++                            $wouldInsert++;
++                        }
+                     }
++                    $dryRun = (bool) $context->option('dry_run', false);
++                    $result = $dryRun ? BatchWriteResult::allSucceeded(count($writeRows)) : $definition->handleBatch(array_column($writeRows, 'payload'), $context);
+                     if ($result->succeeded + $result->skipped !== count($writeRows)) {
+                         throw new ImportConfigurationException(
+                             $definition::class.'::handleBatch() counters must account for every supplied row.',
+                         );
+                     }
++                    if (! $dryRun) {
++                        $inserted = $wouldInsert;
++                        $updatedRows = $wouldUpdate;
++                        $wouldInsert = $wouldUpdate = 0;
++                    }
+                     $succeeded += $result->succeeded;
+                     $skipped += $result->skipped;
+                 } finally {
+@@ -165,6 +197,16 @@ final class ChunkProcessor
+                 }
+             }
+ 
++            $sourceMap = [];
++            foreach ($envelopes as $envelope) {
++                $sourceMap[$envelope['row_number']] = $envelope;
++            }
++            $attemptFailures = array_map(static function (RowFailure $failure) use ($sourceMap): RowFailure {
++                $source = $sourceMap[$failure->rowNumber];
++
++                return new RowFailure($failure->rowNumber, $failure->column, $failure->code, $failure->message, $source['raw'] ?? $failure->row,
++                    $source['sheet'] ?? null, $source['sheet_row'] ?? $failure->rowNumber, $source['data']);
++            }, $attemptFailures);
+             $this->failureRecorder->record($import->id, $chunk->id, $attemptFailures);
+             $failed = count(array_unique(array_map(
+                 static fn (RowFailure $failure): int => $failure->rowNumber,
+@@ -185,26 +227,46 @@ final class ChunkProcessor
+                 $failed,
+                 $skipped,
+                 $staged,
++                $inserted, $updatedRows, $wouldInsert, $wouldUpdate,
+             );
+ 
+             return compact('completed', 'succeeded', 'failed', 'skipped', 'staged');
+         }, attempts: 3);
+ 
++        Log::info('import.chunk.completed', [
++            'operation' => 'import', 'import_id' => $import->id, 'definition' => $import->definition, 'chunk_id' => $chunk->id,
++            'rows' => $chunk->total_rows, 'duration_seconds' => microtime(true) - $started,
++            'rows_per_second' => $chunk->total_rows / max(0.001, microtime(true) - $started),
++            'validation_seconds' => $validationDone - $started, 'relation_seconds' => $relationDone - $validationDone,
++            'write_seconds' => microtime(true) - $relationDone, 'attempt' => $chunk->attempts, 'memory_bytes' => memory_get_usage(true),
++        ]);
+         ImportChunkCompleted::dispatch($stats['completed'], $context->context);
+         ImportProgressUpdated::dispatch($import->refresh());
+     }
+ 
+     /**
+-     * @param list<array{row_number:int,data:array<string,mixed>,business_key_hash:?string,duplicate_of_row:?int}> $envelopes
+-     * @return array{list<array{row_number:int,source:array<string,mixed>}>,list<RowFailure>}
++     * @param  list<array{row_number:int,data:array<string,mixed>,business_key_hash:?string,duplicate_of_row:?int}>  $envelopes
++     * @return array{list<array{row_number:int,source:array<string,mixed>}>,list<RowFailure>,int}
+      */
+     private function validateRows(array $envelopes, ImportDefinition $definition, ImportContext $context): array
+     {
+         $candidates = [];
+         $failures = [];
++        $skipped = 0;
++        $rules = $definition->rules();
+ 
+         foreach ($envelopes as $envelope) {
++            if (($error = $envelope['normalization_error'] ?? null) !== null) {
++                $failures[] = new RowFailure($envelope['row_number'], $error['column'], $error['code'], $error['message'], $envelope['raw'] ?? $envelope['data']);
++
++                continue;
++            }
+             if ($envelope['duplicate_of_row'] !== null) {
++                if ($definition instanceof DataDefinition && $definition->duplicateStrategy() !== DuplicateStrategy::ERROR) {
++                    $skipped++;
++
++                    continue;
++                }
+                 $failures[] = new RowFailure(
+                     $envelope['row_number'],
+                     implode(',', $definition->uniqueBy()),
+@@ -212,10 +274,11 @@ final class ChunkProcessor
+                     "Business key duplicates source row {$envelope['duplicate_of_row']}.",
+                     $envelope['data'],
+                 );
++
+                 continue;
+             }
+ 
+-            $validator = $this->validator->make($envelope['data'], $definition->rules());
++            $validator = $this->validator->make($envelope['data'], $rules);
+             if ($validator->fails()) {
+                 $failedRules = $validator->failed();
+                 foreach ($validator->errors()->getMessages() as $column => $messages) {
+@@ -230,13 +293,14 @@ final class ChunkProcessor
+                         );
+                     }
+                 }
++
+                 continue;
+             }
+ 
+             $candidates[] = ['row_number' => $envelope['row_number'], 'source' => $envelope['data']];
+         }
+ 
+-        return [$candidates, $failures];
++        return [$candidates, $failures, $skipped];
+     }
+ 
+     /** @param array<string,mixed> $row @param list<Reference> $definitions */
+@@ -244,7 +308,7 @@ final class ChunkProcessor
+         int $rowNumber,
+         array $row,
+         array $definitions,
+-        \Nexus\ImportExport\Data\ResolvedReferences $resolved,
++        ResolvedReferences $resolved,
+     ): ?RowFailure {
+         foreach ($definitions as $reference) {
+             $value = $row[$reference->sourceColumn] ?? null;
+@@ -258,6 +322,7 @@ final class ChunkProcessor
+                         $row,
+                     );
+                 }
++
+                 continue;
+             }
+             if ($reference->required && ! $resolved->has($reference->name, $value)) {
+@@ -275,7 +340,7 @@ final class ChunkProcessor
+     }
+ 
+     /**
+-     * @param list<array{row_number:int,source:array<string,mixed>,payload:array<string,mixed>,key_hash:string}> $rows
++     * @param  list<array{row_number:int,source:array<string,mixed>,payload:array<string,mixed>,key_hash:string}>  $rows
+      * @return array{list<array<string,mixed>>,list<RowFailure>,int,null|array{connection:string,scope:string,hashes:list<string>}}
+      */
+     private function filterDatabaseDuplicates(
+@@ -299,9 +364,7 @@ final class ChunkProcessor
+         $scope = $target->lockScope($context);
+         $hashes = array_column($rows, 'key_hash');
+         $this->keyLocks->acquire($connection, $scope, $hashes, $import->id);
+-        $existing = $definition->duplicateStrategy() === DuplicateStrategy::UPSERT
+-            ? []
+-            : $target->existingKeyHashes(array_column($rows, 'payload'), $definition, $context);
++        $existing = $target->existingKeyHashes(array_column($rows, 'payload'), $definition, $context);
+         $writeRows = [];
+         $failures = [];
+         $skipped = 0;
+@@ -317,19 +380,23 @@ final class ChunkProcessor
+                     'The business key already exists in the target database.',
+                     $row['source'],
+                 );
++
+                 continue;
+             }
+ 
+             if ($definition->duplicateStrategy() === DuplicateStrategy::SKIP && $exists) {
+                 $skipped++;
++
+                 continue;
+             }
+ 
+             if ($definition->duplicateStrategy() === DuplicateStrategy::UPDATE && ! $exists) {
+                 $skipped++;
++
+                 continue;
+             }
+ 
++            $row['existed'] = $exists;
+             $writeRows[] = $row;
+         }
+ 
+diff --git a/src/Services/EloquentAtomicCommitter.php b/src/Services/EloquentAtomicCommitter.php
+index 4d38f34..38b0b56 100644
+--- a/src/Services/EloquentAtomicCommitter.php
++++ b/src/Services/EloquentAtomicCommitter.php
+@@ -76,16 +76,19 @@ final class EloquentAtomicCommitter implements AtomicCommitter
+                                 'code' => 'duplicate_in_database',
+                                 'message' => 'The business key already exists in the target database.',
+                             ];
++
+                             continue;
+                         }
+ 
+                         if ($definition->duplicateStrategy() === DuplicateStrategy::SKIP && $exists) {
+                             $skipped++;
++
+                             continue;
+                         }
+ 
+                         if ($definition->duplicateStrategy() === DuplicateStrategy::UPDATE && ! $exists) {
+                             $skipped++;
++
+                             continue;
+                         }
+ 
+diff --git a/src/Services/ErrorReportGenerator.php b/src/Services/ErrorReportGenerator.php
+index 04964d8..4fa3b5f 100644
+--- a/src/Services/ErrorReportGenerator.php
++++ b/src/Services/ErrorReportGenerator.php
+@@ -22,7 +22,7 @@ final class ErrorReportGenerator
+         try {
+             fputcsv(
+                 $stream,
+-                ['Original Row Number', 'Original Data', 'Error Column', 'Error Code', 'Error Message'],
++                ['Original Row Number', 'Original Data', 'Error Column', 'Error Code', 'Error Message', 'Sheet', 'Sheet Row', 'Failure Type'],
+                 ',',
+                 '"',
+                 '',
+@@ -31,9 +31,7 @@ final class ErrorReportGenerator
+ 
+             $failures = ImportFailure::query()
+                 ->where('import_id', $import->id)
+-                ->orderBy('row_number')
+-                ->orderBy('id')
+-                ->lazy(500);
++                ->lazyById(500);
+ 
+             foreach ($failures as $failure) {
+                 $original = json_encode(
+@@ -46,6 +44,7 @@ final class ErrorReportGenerator
+                     (string) $failure->column,
+                     $failure->error_code,
+                     $failure->error_message,
++                    (string) $failure->sheet, (string) ($failure->sheet_row ?? $failure->row_number), (string) $failure->failure_type,
+                 ]), ',', '"', '', "\n");
+             }
+ 
+diff --git a/src/Services/FailureRedactor.php b/src/Services/FailureRedactor.php
+index 54d028c..ea3436c 100644
+--- a/src/Services/FailureRedactor.php
++++ b/src/Services/FailureRedactor.php
+@@ -19,6 +19,7 @@ final class FailureRedactor
+             if (in_array(strtolower((string) $column), $redactedColumns, true)) {
+                 $value = '[REDACTED]';
+                 $didRedact = true;
++
+                 continue;
+             }
+ 
+diff --git a/src/Services/FinalizeImport.php b/src/Services/FinalizeImport.php
+index edb57e2..31caf3c 100644
+--- a/src/Services/FinalizeImport.php
++++ b/src/Services/FinalizeImport.php
+@@ -48,6 +48,7 @@ final class FinalizeImport
+             $message = 'One or more chunks exhausted their retry budget.';
+             $import = $this->states->transition($import, ImportStatus::FAILED, [
+                 'failure_stage' => FailureStage::CHUNK->value,
++                'failure_type' => 'persistence_error',
+                 'error_message' => $message,
+                 'failed_at' => now(),
+                 'lease_token' => null,
+diff --git a/src/Services/ImportDispatcher.php b/src/Services/ImportDispatcher.php
+index 6c057dd..074dd5a 100644
+--- a/src/Services/ImportDispatcher.php
++++ b/src/Services/ImportDispatcher.php
+@@ -11,8 +11,10 @@ use Illuminate\Queue\SyncQueue;
+ use Illuminate\Support\Str;
+ use JsonException;
+ use Nexus\ImportExport\Contracts\ImportAuthorizer;
++use Nexus\ImportExport\Definitions\DataDefinition;
+ use Nexus\ImportExport\Enums\FailureStage;
+ use Nexus\ImportExport\Enums\IdempotencyStrategy;
++use Nexus\ImportExport\Enums\ImportMode;
+ use Nexus\ImportExport\Enums\ImportStatus;
+ use Nexus\ImportExport\Events\ImportCreated;
+ use Nexus\ImportExport\Events\ImportFailed;
+@@ -56,6 +58,20 @@ final class ImportDispatcher
+         $type = $this->definitions->typeFor($definitionClass);
+         $context = $this->contexts->normalize($context);
+         $options = $this->normalizeOptions($options);
++        if (($options['dry_run'] ?? false) && $definition->mode() !== ImportMode::PARTIAL) {
++            throw new \InvalidArgumentException('Dry runs require PARTIAL mode.');
++        }
++        if ($definition instanceof DataDefinition) {
++            $trusted = app(DataAccess::class)->context();
++            if ($context !== $trusted) {
++                throw new AuthorizationException('Tenant context must come from CurrentContext.');
++            }
++            $definition->inContext($context);
++            app(DataAccess::class)->assertActor($definition, $actor, $type);
++            if (! $definition->canImport($actor)) {
++                throw new AuthorizationException;
++            }
++        }
+ 
+         if (! $this->authorizer->canCreate($actor, $type, $context)) {
+             throw new AuthorizationException('You are not allowed to create this import.');
+@@ -177,8 +193,7 @@ final class ImportDispatcher
+         Import $existing,
+         IdempotencyStrategy $strategy,
+         ?object $actor,
+-    ): Import
+-    {
++    ): Import {
+         if (! $this->authorizer->canView($actor, $existing)) {
+             throw new AuthorizationException('A matching import exists but is not visible to this actor.');
+         }
+@@ -228,6 +243,12 @@ final class ImportDispatcher
+     private function normalizeOptions(array $options): array
+     {
+         $this->assertJsonSafe($options);
++        if (isset($options['dry_run']) && ! is_bool($options['dry_run'])) {
++            throw new \InvalidArgumentException('dry_run must be boolean.');
++        }
++        if (isset($options['mapping']) && ! is_array($options['mapping'])) {
++            throw new \InvalidArgumentException('mapping must be a header-to-field object.');
++        }
+ 
+         if (array_key_exists('chunk_size', $options)) {
+             $chunkSize = $options['chunk_size'];
+diff --git a/src/Services/ImportFingerprint.php b/src/Services/ImportFingerprint.php
+index ef8766b..3b86606 100644
+--- a/src/Services/ImportFingerprint.php
++++ b/src/Services/ImportFingerprint.php
+@@ -15,8 +15,7 @@ final class ImportFingerprint
+         array $options,
+         ?string $actorType = null,
+         ?string $actorId = null,
+-    ): string
+-    {
++    ): string {
+         return hash('sha256', CanonicalJson::encode([
+             'file_hash' => $fileHash,
+             'definition' => $definition,
+diff --git a/src/Services/PrepareImport.php b/src/Services/PrepareImport.php
+index fcdd60f..8431f4f 100644
+--- a/src/Services/PrepareImport.php
++++ b/src/Services/PrepareImport.php
+@@ -7,11 +7,13 @@ use Illuminate\Support\Facades\DB;
+ use Illuminate\Support\Str;
+ use JsonSerializable;
+ use Nexus\ImportExport\Data\SourceRow;
++use Nexus\ImportExport\Definitions\DataDefinition;
+ use Nexus\ImportExport\Enums\ChunkStatus;
+ use Nexus\ImportExport\Enums\ImportStatus;
+ use Nexus\ImportExport\Events\ImportStarted;
+ use Nexus\ImportExport\Exceptions\FileValidationException;
+ use Nexus\ImportExport\Exceptions\ImportCancelledSignal;
++use Nexus\ImportExport\Exceptions\RejectRow;
+ use Nexus\ImportExport\Models\Import;
+ use Nexus\ImportExport\Models\ImportChunk;
+ use Nexus\ImportExport\Models\ImportFailure;
+@@ -19,6 +21,7 @@ use Nexus\ImportExport\Models\ImportRowKey;
+ use Nexus\ImportExport\Models\ImportStagedRow;
+ use Nexus\ImportExport\Readers\ReaderRegistry;
+ use Nexus\ImportExport\State\ImportStateMachine;
++use Nexus\ImportExport\Support\Header;
+ use Stringable;
+ 
+ final class PrepareImport
+@@ -37,11 +40,18 @@ final class PrepareImport
+     {
+         $this->integrity->verify($import->disk, $import->file_path, $import->file_hash);
+         $definition = $this->definitions->make($import->type);
++        if ($definition instanceof DataDefinition) {
++            $definition->inContext($import->context ?? []);
++        }
++        if ($definition->version() !== $import->definition_version) {
++            throw new \RuntimeException('The definition version changed; submit a new import.');
++        }
++        $aliases = $this->mapping($definition->headerAliases(), $definition->columns(), $import->options['mapping'] ?? []);
+         $extension = strtolower(pathinfo($import->file_path, PATHINFO_EXTENSION));
+         $reader = $this->readers->for($extension);
+         $inspection = $reader->inspect($import->disk, $import->file_path, $definition->worksheet());
+-        $header = $this->canonicalHeader($inspection->headers, $definition->headerAliases());
+-        $this->validateHeader($header, $definition->columns());
++        $header = $this->canonicalHeader($inspection->headers, $aliases);
++        $this->validateHeader($header, $definition->requiredColumns());
+         $this->assertPreparationLease($import, $leaseToken);
+         $this->cleanPreviousPreparation($import);
+ 
+@@ -49,6 +59,7 @@ final class PrepareImport
+         $maxRows = (int) config('bulk-imports.limits.max_rows', 1000000);
+         $buffer = [];
+         $rowCount = 0;
++        $bufferBytes = 0;
+         $chunkNumber = 0;
+ 
+         foreach ($reader->rows($import->disk, $import->file_path, $definition->worksheet()) as $sourceRow) {
+@@ -57,8 +68,15 @@ final class PrepareImport
+                 throw new FileValidationException(['file' => ["The source exceeds the configured {$maxRows} row limit."]]);
+             }
+ 
+-            $data = $this->canonicalRow($sourceRow, $definition->headerAliases(), $definition->columns());
++            $data = $this->canonicalRow($sourceRow, $aliases, $definition->columns());
+             $this->assertCellLimits($data, $sourceRow->rowNumber);
++            $raw = $data;
++            $normalizationError = null;
++            try {
++                $data = $definition->normalize($data);
++            } catch (RejectRow $error) {
++                $normalizationError = ['column' => $error->column, 'code' => $error->errorCode, 'message' => $error->getMessage()];
++            }
+             $keyHash = $this->hasCompleteBusinessKey($data, $definition->uniqueBy())
+                 ? $definition->sourceBusinessKeyHash($data)
+                 : null;
+@@ -66,25 +84,37 @@ final class PrepareImport
+             $buffer[] = [
+                 'row_number' => $sourceRow->rowNumber,
+                 'data' => $data,
++                'raw' => $raw,
++                'sheet' => $sourceRow->sheet,
++                'sheet_row' => $sourceRow->sheetRow ?? $sourceRow->rowNumber,
++                'normalization_error' => $normalizationError,
+                 'business_key_hash' => $keyHash,
+                 'duplicate_of_row' => null,
+             ];
+ 
+-            if (count($buffer) >= $chunkSize) {
++            $bufferBytes += strlen(json_encode(end($buffer), JSON_THROW_ON_ERROR));
++            if (count($buffer) >= $chunkSize || $bufferBytes >= (int) config('import-export.chunk_max_bytes', 16777216)) {
+                 $chunkNumber++;
+-                $this->persistChunk($import, $chunkNumber, $buffer);
++                $this->persistChunk($import, $chunkNumber, $buffer, $leaseToken);
+                 $buffer = [];
++                $bufferBytes = 0;
+                 $this->assertPreparationLease($import, $leaseToken);
+             }
+         }
+ 
+         if ($buffer !== []) {
+             $chunkNumber++;
+-            $this->persistChunk($import, $chunkNumber, $buffer);
++            $this->persistChunk($import, $chunkNumber, $buffer, $leaseToken);
+         }
+         $this->assertPreparationLease($import, $leaseToken);
+ 
+-        $import->forceFill(['total_rows' => $rowCount, 'total_chunks' => $chunkNumber])->save();
++        if ($rowCount === 0) {
++            throw new FileValidationException(['file' => ['The source contains no data rows.']]);
++        }
++        $updated = Import::query()->whereKey($import->id)->where('lease_token', $leaseToken)->update(['total_rows' => $rowCount, 'total_chunks' => $chunkNumber]);
++        if ($updated !== 1) {
++            throw new \RuntimeException('Preparation lease lost.');
++        }
+         $import = $this->states->transition($import->refresh(), ImportStatus::PROCESSING, [
+             'error_message' => null,
+             'failure_stage' => null,
+@@ -94,10 +124,30 @@ final class PrepareImport
+         $this->dispatchPreparedBatch($import, $leaseToken);
+     }
+ 
++    private function mapping(array $aliases, array $columns, array $manual): array
++    {
++        $result = [];
++        foreach (array_merge(array_combine($columns, $columns), $aliases) as $header => $column) {
++            $key = Header::normalize($header);
++            if (isset($result[$key]) && $result[$key] !== $column) {
++                throw new FileValidationException(['headers' => ['Ambiguous header aliases.']]);
++            }
++            $result[$key] = $column;
++        }
++        foreach ($manual as $header => $column) {
++            if (! is_string($header) || ! is_string($column) || ! in_array($column, $columns, true)) {
++                throw new FileValidationException(['mapping' => ['Only importable definition fields can be mapped.']]);
++            }
++            $result[Header::normalize($header)] = $column;
++        }
++
++        return $result;
++    }
++
+     /** @param list<string> $headers @param array<string,string> $aliases @return list<string> */
+     private function canonicalHeader(array $headers, array $aliases): array
+     {
+-        return array_map(static fn (string $header): string => $aliases[$header] ?? $header, $headers);
++        return array_map(static fn (string $header): string => $aliases[Header::normalize($header)] ?? Header::normalize($header), $headers);
+     }
+ 
+     /** @param list<string> $headers @param list<string> $required */
+@@ -124,11 +174,11 @@ final class PrepareImport
+     /** @param array<string,string> $aliases @param list<string> $columns @return array<string,mixed> */
+     private function canonicalRow(SourceRow $row, array $aliases, array $columns): array
+     {
+-        $canonical = array_fill_keys($columns, null);
++        $canonical = [];
+ 
+         foreach ($row->data as $header => $value) {
+-            $column = $aliases[$header] ?? $header;
+-            if (array_key_exists($column, $canonical)) {
++            $column = $aliases[Header::normalize($header)] ?? Header::normalize($header);
++            if (in_array($column, $columns, true)) {
+                 $canonical[$column] = $this->normalizeCell($value);
+             }
+         }
+@@ -139,7 +189,7 @@ final class PrepareImport
+     private function normalizeCell(mixed $value): mixed
+     {
+         return match (true) {
+-            $value instanceof DateTimeInterface => $value->format(DATE_ATOM),
++            $value instanceof DateTimeInterface => $value,
+             $value instanceof JsonSerializable => $value->jsonSerialize(),
+             $value instanceof Stringable => (string) $value,
+             is_scalar($value), $value === null => $value,
+@@ -173,9 +223,13 @@ final class PrepareImport
+     }
+ 
+     /** @param list<array{row_number:int,data:array<string,mixed>,business_key_hash:?string,duplicate_of_row:?int}> $rows */
+-    private function persistChunk(Import $import, int $chunkNumber, array $rows): void
++    private function persistChunk(Import $import, int $chunkNumber, array $rows, string $leaseToken): void
+     {
+-        DB::connection(config('bulk-imports.database.connection'))->transaction(function () use ($import, $chunkNumber, &$rows): void {
++        DB::connection(config('bulk-imports.database.connection'))->transaction(function () use ($import, $chunkNumber, &$rows, $leaseToken): void {
++            $current = Import::query()->whereKey($import->id)->lockForUpdate()->firstOrFail();
++            if ($current->lease_token !== $leaseToken || $current->status !== ImportStatus::VALIDATING) {
++                throw new \RuntimeException('Preparation lease lost before writing a chunk.');
++            }
+             $claims = [];
+             foreach ($rows as $row) {
+                 $hash = $row['business_key_hash'];
+@@ -259,6 +313,7 @@ final class PrepareImport
+                 'skipped_rows' => 0,
+                 'staged_rows' => 0,
+                 'total_chunks' => 0,
++                'inserted_rows' => 0, 'updated_rows' => 0, 'would_insert' => 0, 'would_update' => 0, 'processed_chunks' => 0,
+                 'queue_batch_id' => null,
+                 'batch_dispatched_at' => null,
+                 'updated_at' => now(),
+diff --git a/src/Services/ReferenceResolver.php b/src/Services/ReferenceResolver.php
+index f52ae65..b9f987e 100644
+--- a/src/Services/ReferenceResolver.php
++++ b/src/Services/ReferenceResolver.php
+@@ -15,6 +15,7 @@ final class ReferenceResolver
+     public function resolve(array $references, array $rows): ResolvedReferences
+     {
+         $resolved = [];
++        $ambiguous = [];
+ 
+         foreach ($references as $reference) {
+             $values = array_values(array_unique(array_filter(
+@@ -47,12 +48,17 @@ final class ReferenceResolver
+                 }
+ 
+                 foreach ($query->get($reference->select) as $record) {
+-                    $resolved[$reference->name][(string) $record->getAttribute($reference->targetColumn)]
+-                        = $record->getAttribute($reference->valueColumn);
++                    $key = (string) $record->getAttribute($reference->targetColumn);
++                    if (isset($resolved[$reference->name][$key]) || isset($ambiguous[$reference->name][$key])) {
++                        unset($resolved[$reference->name][$key]);
++                        $ambiguous[$reference->name][$key] = true;
++                    } else {
++                        $resolved[$reference->name][$key] = $record->getAttribute($reference->valueColumn);
++                    }
+                 }
+             }
+         }
+ 
+-        return new ResolvedReferences($resolved);
++        return new ResolvedReferences($resolved, $ambiguous);
+     }
+ }
+diff --git a/src/Services/RowFailureRecorder.php b/src/Services/RowFailureRecorder.php
+index 6760d98..acc9b01 100644
+--- a/src/Services/RowFailureRecorder.php
++++ b/src/Services/RowFailureRecorder.php
+@@ -5,6 +5,7 @@ namespace Nexus\ImportExport\Services;
+ use Illuminate\Database\DatabaseManager;
+ use Illuminate\Support\Str;
+ use Nexus\ImportExport\Data\RowFailure;
++use Nexus\ImportExport\Enums\FailureType;
+ use Nexus\ImportExport\Models\ImportFailure;
+ 
+ final class RowFailureRecorder
+@@ -31,6 +32,9 @@ final class RowFailureRecorder
+                 'import_id' => $importId,
+                 'import_chunk_id' => $chunkId,
+                 'row_number' => $failure->rowNumber,
++                'sheet' => $failure->sheet, 'sheet_row' => $failure->sheetRow,
++                'failure_type' => FailureType::forCode($failure->code)->value,
++                'normalized_row_data' => $failure->normalized === null ? null : json_encode($this->redactor->redact($failure->normalized)['row'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                 'column' => $failure->column === null ? null : Str::limit($failure->column, 255, ''),
+                 'error_code' => Str::limit($failure->code, 100, ''),
+                 'error_message' => Str::limit($failure->message, 4000),
+diff --git a/src/Services/StoredFileIntegrityVerifier.php b/src/Services/StoredFileIntegrityVerifier.php
+index 300e743..0804bd2 100644
+--- a/src/Services/StoredFileIntegrityVerifier.php
++++ b/src/Services/StoredFileIntegrityVerifier.php
+@@ -18,9 +18,7 @@ final class StoredFileIntegrityVerifier
+ 
+         $hash = hash_init('sha256');
+         try {
+-            if (hash_update_stream($hash, $stream) === false) {
+-                throw new FileValidationException(['file' => ['The stored source file could not be verified.']]);
+-            }
++            hash_update_stream($hash, $stream);
+         } finally {
+             fclose($stream);
+         }
+diff --git a/src/State/ImportStateMachine.php b/src/State/ImportStateMachine.php
+index f0bef25..6beb73e 100644
+--- a/src/State/ImportStateMachine.php
++++ b/src/State/ImportStateMachine.php
+@@ -38,8 +38,7 @@ final class ImportStateMachine
+         ImportStatus $to,
+         array $attributes = [],
+         ?Closure $constraint = null,
+-    ): Import
+-    {
++    ): Import {
+         $from = $import->status;
+ 
+         if (! $this->can($from, $to)) {
+diff --git a/tests/Large/FiftyThousandStudentsTest.php b/tests/Large/FiftyThousandStudentsTest.php
+index abfd1b6..91ab175 100644
+--- a/tests/Large/FiftyThousandStudentsTest.php
++++ b/tests/Large/FiftyThousandStudentsTest.php
+@@ -11,7 +11,7 @@ use Nexus\ImportExport\Facades\BulkImport;
+ use Nexus\ImportExport\Tests\TestCase;
+ use PHPUnit\Framework\Attributes\Group;
+ 
+-#[Group('large')]
++#[Group('performance')]
+ final class FiftyThousandStudentsTest extends TestCase
+ {
+     public function test_generated_fifty_thousand_row_fixture_is_processed_in_fifty_chunks(): void
+diff --git a/tests/Support/TestUser.php b/tests/Support/TestUser.php
+index 806e603..e17f0ec 100644
+--- a/tests/Support/TestUser.php
++++ b/tests/Support/TestUser.php
+@@ -3,8 +3,13 @@
+ namespace Nexus\ImportExport\Tests\Support;
+ 
+ use Illuminate\Foundation\Auth\User as Authenticatable;
++use Illuminate\Notifications\Notifiable;
+ 
+ final class TestUser extends Authenticatable
+ {
++    use Notifiable;
++
++    protected $table = 'users';
++
+     protected $guarded = [];
+ }
+diff --git a/tests/TestCase.php b/tests/TestCase.php
+index de9b2f4..796312e 100644
+--- a/tests/TestCase.php
++++ b/tests/TestCase.php
+@@ -3,11 +3,13 @@
+ namespace Nexus\ImportExport\Tests;
+ 
+ use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Http\UploadedFile;
+ use Illuminate\Support\Facades\Schema;
+ use Illuminate\Support\Facades\Storage;
+ use Nexus\ImportExport\BulkImportServiceProvider;
+ use Nexus\ImportExport\Examples\Imports\AtomicStudentsImport;
+ use Nexus\ImportExport\Examples\Imports\StudentsImport;
++use Nexus\ImportExport\Examples\Models\Course;
+ use Nexus\ImportExport\Tests\Support\TestUser;
+ use Orchestra\Testbench\TestCase as Orchestra;
+ 
+@@ -61,7 +63,7 @@ abstract class TestCase extends Orchestra
+     protected function seedCourses(): void
+     {
+         foreach (range(1, 10) as $index) {
+-            \Nexus\ImportExport\Examples\Models\Course::query()->create([
++            Course::query()->create([
+                 'code' => sprintf('COURSE-%02d', $index),
+                 'name' => "Course {$index}",
+             ]);
+@@ -69,7 +71,7 @@ abstract class TestCase extends Orchestra
+     }
+ 
+     /** @param list<list<string|null>> $rows */
+-    protected function uploadedCsv(array $rows, string $name = 'students.csv'): \Illuminate\Http\UploadedFile
++    protected function uploadedCsv(array $rows, string $name = 'students.csv'): UploadedFile
+     {
+         $stream = fopen('php://temp', 'w+b');
+         fputcsv($stream, ['student_code', 'name', 'email', 'phone', 'date_of_birth', 'course_code'], ',', '"', '', "\n");
+@@ -80,7 +82,7 @@ abstract class TestCase extends Orchestra
+         $content = stream_get_contents($stream);
+         fclose($stream);
+ 
+-        return \Illuminate\Http\UploadedFile::fake()->createWithContent($name, $content);
++        return UploadedFile::fake()->createWithContent($name, $content);
+     }
+ 
+     private function migratePackage(): void

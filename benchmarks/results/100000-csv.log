@@ -1,0 +1,10 @@
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.25
+Configuration: /workspace/scratch/1055b48473cb/async-bulk-imports/phpunit.xml
+
+{"phase":"import","rows":100000,"seconds":48.505,"peak_php_bytes":41943040}
+{"rows":100000,"import_format":"csv","export_format":"csv","php":"8.4.25","laravel":"12.69.1","database":"SQLite 3.45.1","storage":"local","execution":"real pipeline / in-process jobs; no broker throughput measured","sqlite_journal":"WAL / synchronous FULL","import_chunk_size":1000,"export_chunk_size":2000,"source_bytes":12977894,"source_generation_seconds":0.093,"import_seconds":48.505,"import_rows_per_second":2061.6,"import_peak_php_bytes":41943040,"import_queries":5535,"import_database_seconds":3.548,"import_relation_queries":300,"import_chunks":100,"mean_chunk_seconds":0.401,"max_chunk_seconds":0.4708,"export_seconds":6.564,"export_rows_per_second":15234,"export_peak_php_bytes":46661632,"export_queries":681,"export_database_seconds":0.199,"export_relation_queries":150,"export_parts":50,"export_bytes":13077884,"export_job_serialized_bytes":420,"date_utc":"2026-09-06T05:55:23+00:00"}
+Time: 00:55.308, Memory: 44.50 MB
+
+OK (1 test, 4 assertions)

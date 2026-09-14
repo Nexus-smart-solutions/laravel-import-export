@@ -1,0 +1,1476 @@
+{
+  "source": "current live working tree",
+  "verification": "docs/VERIFICATION.md",
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 93,
+      "sha256": "ff00756c341006b32e19cda3f97551b91e7c2cf0d0e44f8ea11dfe65e92cedce"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 1056,
+      "sha256": "f9538cfff74193a1519d37f168999bf8865398f2fd69d3fc450e03b3a540f50e"
+    },
+    {
+      "path": "LICENSE.md",
+      "bytes": 2406,
+      "sha256": "922974aaf8f23978d4279d0313a0e10126f563c2d9f40844b3335afb16bbbe68"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3974,
+      "sha256": "aac553e51db34ad3626451d5eb58245645fedcbd83087f731c7fb8b23374d8d5"
+    },
+    {
+      "path": "STATUS.md",
+      "bytes": 832,
+      "sha256": "2750bb37ab8e70e9aea3427531c5a7dae89233ef32481897e88587ec140f2ed9"
+    },
+    {
+      "path": "UPGRADING.md",
+      "bytes": 1402,
+      "sha256": "f004dbe896984cde342a54ec3a2b051d834886cea77dead2515b98b48061a63a"
+    },
+    {
+      "path": "changes.patch",
+      "bytes": 175590,
+      "sha256": "89a5acdd975b5afdf36ac150e9d3f7c093e196002c45fc6bb923ba6c77c0366b"
+    },
+    {
+      "path": "composer.json",
+      "bytes": 2299,
+      "sha256": "ced8b305a1abdd792c63601c2b96a91d462be1a02865720fb4bd324303a536fa"
+    },
+    {
+      "path": "composer.lock",
+      "bytes": 337665,
+      "sha256": "475918a8a72119f4f116305ff4581aa2454b2da44777404c62b9a692632514dd"
+    },
+    {
+      "path": "phpstan.neon",
+      "bytes": 169,
+      "sha256": "7f8671d27acf458b6352de1f9c12d6ea0442e2bbdbc75976e96b4869f76ca38e"
+    },
+    {
+      "path": "phpunit.xml",
+      "bytes": 835,
+      "sha256": "a0300e68eba31492e0d69b6e36c3cbbf658f4af4d24794d672e36060f7a87333"
+    },
+    {
+      "path": ".github/workflows/tests.yml",
+      "bytes": 577,
+      "sha256": "1c46721c11f80163501a6d15ed2cf5597e0dcd82b99db954244311d37b8a8bba"
+    },
+    {
+      "path": "benchmarks/EngineBenchmarkTest.php",
+      "bytes": 7496,
+      "sha256": "c0b2b5ea65bb93eb4c8c76f10c44819545a3d8cab7cee969784aaf65eceba387"
+    },
+    {
+      "path": "benchmarks/README.md",
+      "bytes": 564,
+      "sha256": "dd6a7ef7a64de294039cdaf6d0d8a54fd40da88179807075485ee3e3179168bd"
+    },
+    {
+      "path": "benchmarks/run.php",
+      "bytes": 737,
+      "sha256": "a496b59549f09bf769a2a8b054b362a9d90bdeab696fa794219ca918b8a5c982"
+    },
+    {
+      "path": "benchmarks/results/10000-csv.json",
+      "bytes": 1084,
+      "sha256": "5d5d36ed953ff5886082e3783d411f8add4371cc262da322637a6b6e6f9f16d6"
+    },
+    {
+      "path": "benchmarks/results/10000-csv.log",
+      "bytes": 1188,
+      "sha256": "cf20b5eb86199af524f6c8757d4bec3c2b15449f2037ededf070c0ea25c6c696"
+    },
+    {
+      "path": "benchmarks/results/10000-xlsx.json",
+      "bytes": 1084,
+      "sha256": "33b553ebe5c69305fdd9981ed05158ab3fd09404e2e6b277d7b4ff3cc380fe25"
+    },
+    {
+      "path": "benchmarks/results/10000-xlsx.log",
+      "bytes": 1188,
+      "sha256": "e124e07eaf0e3c33479ffd4afbbc3e8bb10fae2e9de05fd90cfd54e65d4077c6"
+    },
+    {
+      "path": "benchmarks/results/100000-csv.json",
+      "bytes": 1092,
+      "sha256": "6c93aab20005f6c8a8c06c7b3a1362886dabd3753bb4f47153868148d63f3756"
+    },
+    {
+      "path": "benchmarks/results/100000-csv.log",
+      "bytes": 1198,
+      "sha256": "b54cddd06683a8107c58802ac76352bbcc11bcf8a9d06a6429783d63ec2ef4b8"
+    },
+    {
+      "path": "benchmarks/results/1000000-csv.log",
+      "bytes": 162,
+      "sha256": "a26b4aa6756199f62b859bbbbccffe3555d6a2c15e1d13f25ca9d790cd58c15e"
+    },
+    {
+      "path": "benchmarks/results/50000-csv.json",
+      "bytes": 1090,
+      "sha256": "a5f957d63c9bc8ce306e705f1d7713b9c47962b91513896231a573a5f9e653bb"
+    },
+    {
+      "path": "benchmarks/results/50000-csv.log",
+      "bytes": 1195,
+      "sha256": "e3879f499241d85c97b59d93c6331eb23b033bf6de54a3c1b030bc6944da7dd8"
+    },
+    {
+      "path": "benchmarks/results/500000-csv.json",
+      "bytes": 1101,
+      "sha256": "c59729667fb0df9e12b0f160e5594c57e829eeae50737072dcecec82cf0e582b"
+    },
+    {
+      "path": "benchmarks/results/500000-csv.log",
+      "bytes": 1208,
+      "sha256": "e816c7b3919da08130b09707eeb8e95eaaed23240831a86d2addeafd16231267"
+    },
+    {
+      "path": "config/bulk-imports.php",
+      "bytes": 3975,
+      "sha256": "372d2d87bec1db2ce9e601f798b2e8fba6ccebd2d89255120f38cd4942498211"
+    },
+    {
+      "path": "config/import-export.php",
+      "bytes": 1673,
+      "sha256": "30b8b50d7063bcaefc0572c68839ca0a692de0a605a0ea23598997ac540bad38"
+    },
+    {
+      "path": "database/migrations/2026_01_01_000001_create_imports_table.php",
+      "bytes": 3366,
+      "sha256": "faa81365b581c3ce8807365833038b9c64d9207196ada23497ab894065c139a8"
+    },
+    {
+      "path": "database/migrations/2026_01_01_000002_create_import_chunks_table.php",
+      "bytes": 2265,
+      "sha256": "40eae10eccfc6e320d6765625421fa401b99012081551de3f721e70fbbc78f6b"
+    },
+    {
+      "path": "database/migrations/2026_01_01_000003_create_import_failures_table.php",
+      "bytes": 1593,
+      "sha256": "fd032a99cd660f05d4e685533316e3d3bbd2d9eed881270497d3d2833b0f7edc"
+    },
+    {
+      "path": "database/migrations/2026_01_01_000004_create_import_row_keys_table.php",
+      "bytes": 1299,
+      "sha256": "8ba50f8bb2b96a20d0eae40a0b526ca8db29041e31eadf6d55d40ffabd8a611b"
+    },
+    {
+      "path": "database/migrations/2026_01_01_000005_create_import_staged_rows_table.php",
+      "bytes": 1459,
+      "sha256": "111cf7ee1c06c834611d50faf5f5a033950c16072b7d2abdf31ce43cf2d47d93"
+    },
+    {
+      "path": "database/migrations/2026_01_01_000006_create_import_key_locks_table.php",
+      "bytes": 991,
+      "sha256": "50e3059524ad19fabb69af19812fbe7c7fcff62bdbae08574365eadf7e6fd651"
+    },
+    {
+      "path": "database/migrations/2026_09_05_000001_add_import_statistics.php",
+      "bytes": 1372,
+      "sha256": "cc90ab35cba0454c96d587f4ac866998dace9133473df6e025e49a4e1856eb3b"
+    },
+    {
+      "path": "database/migrations/2026_09_05_000002_create_exports.php",
+      "bytes": 2784,
+      "sha256": "58232935ee6c1ea872eb94d3af9805daf20d43a7f31a93aaacde8845c10688e0"
+    },
+    {
+      "path": "database/migrations/2026_09_05_000003_add_failure_locations.php",
+      "bytes": 1361,
+      "sha256": "6bf122b0def2e808869318ac3dd24f802e3a7ead6514d3dde1ffdabafa45a3e8"
+    },
+    {
+      "path": "database/migrations/2026_09_06_000001_create_guest_access_and_notifications.php",
+      "bytes": 1841,
+      "sha256": "4f5b9743ae80f778e4feb9d118d3e42a8428f1897ff7a0260367a5ba6b1eb18f"
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "bytes": 600,
+      "sha256": "2bcd1aa65d5d320e73ec345685b5d98d1cae582c444a767a0ae7f25ba23201dd"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_WALKTHROUGH.md",
+      "bytes": 286,
+      "sha256": "86bc0c2fb948bec7f37d527dfc96b4c9785d6ebf510ab80b49efb5798e8f10d8"
+    },
+    {
+      "path": "docs/PUBLIC_API.md",
+      "bytes": 290,
+      "sha256": "e43873343d64c0d5bbdcd12e571af3a13aba91544c4ea0c04f6c8c97cce3ee08"
+    },
+    {
+      "path": "docs/VERIFICATION.md",
+      "bytes": 4879,
+      "sha256": "1fbccd5afabf4f62270000ce3c15b9b7128c6e8e1cef48c54545e5cc24881335"
+    },
+    {
+      "path": "docs/api-reference.md",
+      "bytes": 2182,
+      "sha256": "d87332a76422555c21aa148f7ae79328ff6c627f9af5bca33253e999582aa7da"
+    },
+    {
+      "path": "docs/architecture.md",
+      "bytes": 1645,
+      "sha256": "39346ea3d8ce8d3a22bb8b5336109e447802b325fe3f2ebedb1a0e9f26db6b36"
+    },
+    {
+      "path": "docs/authorization.md",
+      "bytes": 2463,
+      "sha256": "2679f3af081065e4c0308cd33701021c1b0d3b89d364db39fb4293cb7e70515b"
+    },
+    {
+      "path": "docs/cancellation.md",
+      "bytes": 667,
+      "sha256": "27e7da2847cd6d2efe7ebb212933441120506f4fd90334957d228f2a1a8c80e7"
+    },
+    {
+      "path": "docs/column-mapping.md",
+      "bytes": 1530,
+      "sha256": "dc77a86996640e18337534c79a121e2a09dc3f85ae5dc51b9490769f742d13a1"
+    },
+    {
+      "path": "docs/configuration.md",
+      "bytes": 1860,
+      "sha256": "ab110bf2cea2569abfe9887ab9af6778141e3a13a5e23892c95b3b46c692990e"
+    },
+    {
+      "path": "docs/database-schema.md",
+      "bytes": 1702,
+      "sha256": "15ccb6da2c9599fdaa940abae3620b021706e7e0f3c561e81ba41b5c853a07a7"
+    },
+    {
+      "path": "docs/definitions.md",
+      "bytes": 1619,
+      "sha256": "c285a49abca4c46f1b954ff3b6cb4c6be0af717bd662eada6397b8cee799412d"
+    },
+    {
+      "path": "docs/duplicate-handling.md",
+      "bytes": 1121,
+      "sha256": "8180642a0c73e2d28f5b05dbaec48d13f10d1e3c08994c2d28228e795e510bca"
+    },
+    {
+      "path": "docs/events.md",
+      "bytes": 949,
+      "sha256": "dc12bc89baefc69890f4e13b411c5a29f6943bbd3486e8cabe490c444df081df"
+    },
+    {
+      "path": "docs/exports.md",
+      "bytes": 1440,
+      "sha256": "03f81435dd378d7fd801d7846921cc7a385e58d208c899a4cde506ae6d4e4616"
+    },
+    {
+      "path": "docs/extending.md",
+      "bytes": 1128,
+      "sha256": "b5a47b0ca9b23a9143809a7a5fb3711a0727697bbab2949deb401941079daafd"
+    },
+    {
+      "path": "docs/failure-reports.md",
+      "bytes": 973,
+      "sha256": "f074c41e2874a8a5f0b737511266396a6e4c99979e726fbce3c032c202a5080b"
+    },
+    {
+      "path": "docs/fields.md",
+      "bytes": 1211,
+      "sha256": "42ef476e76c31419eb9d4ae76853d25494c3efdf2566551bd5e8b4193a563eac"
+    },
+    {
+      "path": "docs/guest-access.md",
+      "bytes": 2215,
+      "sha256": "d954118fff4aceb884fdf797c45dd3d9066e8cfe56675d14065e51e71582c376"
+    },
+    {
+      "path": "docs/imports.md",
+      "bytes": 1207,
+      "sha256": "eb7baa9dc7c0e80f7645ca8aef0ce36addb4ce176d2a8dfe203d09fac15f1b06"
+    },
+    {
+      "path": "docs/index.md",
+      "bytes": 1504,
+      "sha256": "9a2e281b9b1edec0de7555751932c4001d628517fdf12b691f5298120d475654"
+    },
+    {
+      "path": "docs/installation.md",
+      "bytes": 1516,
+      "sha256": "ea87559858a34f1ddaf323d5dbed90115206cb8aaed60ebdbd75c08fbdb7b393"
+    },
+    {
+      "path": "docs/large-exports.md",
+      "bytes": 1031,
+      "sha256": "79660ac083065943484fa12fac778c47f21ce539cfb095b8e5d5ce51055ce0f4"
+    },
+    {
+      "path": "docs/large-imports.md",
+      "bytes": 1158,
+      "sha256": "3b06fbd735d26dbf01159555380e1042983c5df122af8073b60270f6b3d8afbd"
+    },
+    {
+      "path": "docs/limitations.md",
+      "bytes": 1802,
+      "sha256": "92db203cf79fd9c231469fa76eef5173dca8eb9fc19d62169c3d4df00e9b7f7f"
+    },
+    {
+      "path": "docs/multi-tenancy.md",
+      "bytes": 2234,
+      "sha256": "08bf1cb07ee5c988b9007bd4286b6f79f9830c2988e85e046221958444756ba7"
+    },
+    {
+      "path": "docs/normalization.md",
+      "bytes": 1265,
+      "sha256": "643bcd508d27d34213c5823c45ff105ddcba3d660acb6e225fc9425c07efeb3a"
+    },
+    {
+      "path": "docs/notifications.md",
+      "bytes": 3942,
+      "sha256": "f38fd3a7e870f659ecb5436cab813503c6f066a351b2caabb04b07dd68f024a4"
+    },
+    {
+      "path": "docs/options.md",
+      "bytes": 1150,
+      "sha256": "ed1d8f705667072af147dbbc04ade1433cca934f9a7e372d8a61bc25549e4c09"
+    },
+    {
+      "path": "docs/performance.md",
+      "bytes": 3926,
+      "sha256": "9d109107013ad0d4d9b70eeedd32f7947f4aecc9edda9d9a783c397d7eb7a7b1"
+    },
+    {
+      "path": "docs/production.md",
+      "bytes": 1758,
+      "sha256": "90add2e7c1c7019ed814f249b1e84f5499e0490b2960b38e72e6c121016f30b1"
+    },
+    {
+      "path": "docs/progress.md",
+      "bytes": 983,
+      "sha256": "7dac42a80d450fdba9eef1fc832417565580891834e69a538698e5f77618c470"
+    },
+    {
+      "path": "docs/queues.md",
+      "bytes": 1296,
+      "sha256": "10c55d8a41ac868f728b6af2c6ef84171e5595b570353dec78d1ddfd018acb98"
+    },
+    {
+      "path": "docs/quick-start.md",
+      "bytes": 1447,
+      "sha256": "01e315576e15498b772d654fdaa0af3463f9480db71acf46d0478bfc96251ef8"
+    },
+    {
+      "path": "docs/relations.md",
+      "bytes": 1601,
+      "sha256": "1c74d3740752baf5e64d19103ca0cd7e18273257623748ecfed81ebec2181854"
+    },
+    {
+      "path": "docs/relationship-mapping.md",
+      "bytes": 1294,
+      "sha256": "1159f2758c39c85bb5053168f5da3ea5372ea7bed3951115b766b50cb13e8bfa"
+    },
+    {
+      "path": "docs/repository-review.md",
+      "bytes": 1084,
+      "sha256": "889663f0cba17e19f8917d993538bf12c6efe17880e8f9d7fe4a23fb8ae46940"
+    },
+    {
+      "path": "docs/retries-resume.md",
+      "bytes": 1080,
+      "sha256": "1d19ac9b2d949c2103b4904752dc5006171d810e991c544c59b32a9fcdc7feac"
+    },
+    {
+      "path": "docs/security.md",
+      "bytes": 1125,
+      "sha256": "9f9abf70d27404c9cb9edac12deb6933934f57dc3afe8281802edd4ca462323f"
+    },
+    {
+      "path": "docs/system-operations.md",
+      "bytes": 1145,
+      "sha256": "364959c07436888771e3a01b27d84697f1cab2a580e129817ebf5b8ec96197b6"
+    },
+    {
+      "path": "docs/template-dropdowns.md",
+      "bytes": 985,
+      "sha256": "cad9198fa545f5166e3256664326f969db4f561c85289e2062b2a837c7e9f0bd"
+    },
+    {
+      "path": "docs/templates.md",
+      "bytes": 1327,
+      "sha256": "0925d093965ad6c1eb4ffe4be9b23c61d068171abb02852c23538c5109f438ed"
+    },
+    {
+      "path": "docs/testing.md",
+      "bytes": 1696,
+      "sha256": "a650438230aea10a11df71a42853080dbbdc12d00d0a61137dc9e8219739eae7"
+    },
+    {
+      "path": "docs/troubleshooting.md",
+      "bytes": 1270,
+      "sha256": "abc849300801ae61953050f5515676eeafad791d709d66cbec411bd1b23c342b"
+    },
+    {
+      "path": "docs/validation.md",
+      "bytes": 1094,
+      "sha256": "6190981017f0834f04e13462bb63b06a04f74ec3e054c7eb53eaa40f137d8cb0"
+    },
+    {
+      "path": "examples/generate_students_fixture.php",
+      "bytes": 2457,
+      "sha256": "3c7a0c276e13573e5d07c1db584dac7d9b7e85f8f23fe4d36cccd8854593b52d"
+    },
+    {
+      "path": "examples/Enterprise/Definitions/EmployeeDefinition.php",
+      "bytes": 985,
+      "sha256": "2a523aef957b837aaeb21e761dd4ceb3c3212450adff7baecf0da1a191d1441a"
+    },
+    {
+      "path": "examples/Enterprise/Definitions/ProductDefinition.php",
+      "bytes": 1815,
+      "sha256": "96f806b4306e51b07beb6f99c6a62b413b5973d649c5e2e14cfd13ad9bab8c06"
+    },
+    {
+      "path": "examples/Enterprise/Definitions/StudentDefinition.php",
+      "bytes": 3352,
+      "sha256": "8c7027308d04c234aa058f213335020e380fe32c9d156f01469083d65b7aea8d"
+    },
+    {
+      "path": "examples/Enterprise/Models/Brand.php",
+      "bytes": 164,
+      "sha256": "bc69574b6717fb58057a126c6dcc026f57e02d45417c8654c37bef921ca08026"
+    },
+    {
+      "path": "examples/Enterprise/Models/Category.php",
+      "bytes": 167,
+      "sha256": "36b0ccedadfa31ee0d1c943b94556f60c8ec4957ee2ce43bdbe84282f2d04fe7"
+    },
+    {
+      "path": "examples/Enterprise/Models/Classroom.php",
+      "bytes": 168,
+      "sha256": "c65f6a78cce8a2712fd98da77ba8b719f49b8bd2e7fd4fdbb96847c343b39d2b"
+    },
+    {
+      "path": "examples/Enterprise/Models/Country.php",
+      "bytes": 166,
+      "sha256": "ff368ec0fbda02390324189f4f378df1a18170cb2963dbf56e13964492342f23"
+    },
+    {
+      "path": "examples/Enterprise/Models/Department.php",
+      "bytes": 323,
+      "sha256": "009d8ade450ee4169e92e8307d78c7b6bae84873e23126d32596307e4b9bce3a"
+    },
+    {
+      "path": "examples/Enterprise/Models/Employee.php",
+      "bytes": 330,
+      "sha256": "5c504460b619717e61623a85843b4fc45b32358ab4595925ec930f9e22f6d588"
+    },
+    {
+      "path": "examples/Enterprise/Models/Product.php",
+      "bytes": 424,
+      "sha256": "71024e3b93d03badf27286f8fbf222052610544c0f7909f9c6791bf2033aeed3"
+    },
+    {
+      "path": "examples/Enterprise/Models/School.php",
+      "bytes": 317,
+      "sha256": "36125a8f1c6941a3a5bc4fea60617cc655f5a7e56c0e9ab7e2fa7d390384fafc"
+    },
+    {
+      "path": "examples/Enterprise/Models/Student.php",
+      "bytes": 531,
+      "sha256": "1b1d1d4857d08b93cf676d9bfd8ebdb55758f46794a00e1f5d4d087b1af0b5cd"
+    },
+    {
+      "path": "examples/Enterprise/database/2026_09_05_100000_create_example_resources.php",
+      "bytes": 2378,
+      "sha256": "f9ca8fc101f47a91a7b6289b9750d6ca73e4d040a832a7bd899499b5ea659e02"
+    },
+    {
+      "path": "examples/Imports/AtomicStudentsImport.php",
+      "bytes": 466,
+      "sha256": "9c21aa73645a3b86afbc9be6370abf892e4f4767d0be1fb19ca3e926236c9489"
+    },
+    {
+      "path": "examples/Imports/StudentsImport.php",
+      "bytes": 2667,
+      "sha256": "3207f40380118217cfd64ae325b8b9a9ebc4ad5ae22748532187a34d465919f5"
+    },
+    {
+      "path": "examples/Models/Course.php",
+      "bytes": 312,
+      "sha256": "dbd81f7b8be9c4e35e4ad05368af91531de168a2b3f3fff3593c8b289c2c26db"
+    },
+    {
+      "path": "examples/Models/Student.php",
+      "bytes": 417,
+      "sha256": "39e10e6d1c643c22da3ea82645ad108cfd40f2ebd3aa0cf3dfd4fb4781e42b8f"
+    },
+    {
+      "path": "examples/database/migrations/2026_01_01_100001_create_courses_table.php",
+      "bytes": 533,
+      "sha256": "d1c77b26013821ba1bee1ab8ea69393cad6b5902e25f49393f1be371c7a88ef1"
+    },
+    {
+      "path": "examples/database/migrations/2026_01_01_100002_create_students_table.php",
+      "bytes": 800,
+      "sha256": "41e248b33e1ffc8ae0183457673cf8ae2fda747d925c2405e600d388b8c4e2cb"
+    },
+    {
+      "path": "routes/api.php",
+      "bytes": 880,
+      "sha256": "46f3e59b46a87ff4a5a9b837d2aa15b1e47937b891dd1cdf3198bb91b2e14aac"
+    },
+    {
+      "path": "routes/import-export.php",
+      "bytes": 2025,
+      "sha256": "602df002dc85ffdc264ffdaff06396f604880f5b7a6005470e292b4905afce73"
+    },
+    {
+      "path": "src/BulkImportManager.php",
+      "bytes": 304,
+      "sha256": "6d2701376e7b88e6e1996dce67f4c5ae98c7095bca3cbf0d69494a16b9c2828f"
+    },
+    {
+      "path": "src/BulkImportServiceProvider.php",
+      "bytes": 4542,
+      "sha256": "716bacb1c80232f3b8d2a63326038fdf0cddd48a320c81a3c13bd13053ef8f87"
+    },
+    {
+      "path": "src/ExportManager.php",
+      "bytes": 7774,
+      "sha256": "a0e33c9c29431a1a25d43230245d979553c6a4b29c2a0979c38ca90003245c98"
+    },
+    {
+      "path": "src/ImportManager.php",
+      "bytes": 1481,
+      "sha256": "9bb3823649441982ce00e45fe5ef826b82de17e669774e8dd2589931e9af1293"
+    },
+    {
+      "path": "src/PendingImport.php",
+      "bytes": 1819,
+      "sha256": "1b9431703b3c4ff238d4ee7e46f843d2dc7a2baadc587ec01bb9e11861b12b45"
+    },
+    {
+      "path": "src/TemplateManager.php",
+      "bytes": 1868,
+      "sha256": "f9c7b65824f45ee969c1261cda9a6f2db76e3f03b6229960c5641e905d45620e"
+    },
+    {
+      "path": "src/Auth/GuestAccess.php",
+      "bytes": 3878,
+      "sha256": "013be48ec853b987d15ec624960552c6d9ee12bbd570ec1c5bd6b24945ce875c"
+    },
+    {
+      "path": "src/Auth/GuestPrincipal.php",
+      "bytes": 806,
+      "sha256": "4a42f1c9ad5ee06b97ce95402bbe23fa90c7033f671f66bce592d561f7eb29f3"
+    },
+    {
+      "path": "src/Auth/SystemPrincipal.php",
+      "bytes": 764,
+      "sha256": "b11fd5c31c8c9dc5a7d0d5f8c75ec2fc2a8252fba099954ed27cb3535927322f"
+    },
+    {
+      "path": "src/Console/CleanupImportsCommand.php",
+      "bytes": 6497,
+      "sha256": "4ee205d54cb47594bd55019c918d1a9473da109386290cd6ae99a24d9755d6ca"
+    },
+    {
+      "path": "src/Console/MaintainExportsCommand.php",
+      "bytes": 2635,
+      "sha256": "2ee6b62049a19284dd61fb6204baa61f3c62e0b94127c74263bf4e60f05bedca"
+    },
+    {
+      "path": "src/Console/RecoverStaleImportsCommand.php",
+      "bytes": 8376,
+      "sha256": "f9ce9dfe7958e4129fdbf8897415b4236c1c7e04711c1d8319ddcb41091446bb"
+    },
+    {
+      "path": "src/Console/RetryNotificationsCommand.php",
+      "bytes": 1311,
+      "sha256": "d020d1502aa0081d78ecc7828fbb1d2a083d9d69cdd23fa79f5a123336b8ec86"
+    },
+    {
+      "path": "src/Contracts/AtomicCommitter.php",
+      "bytes": 699,
+      "sha256": "a5fb1893a171bded660ffac992472113b45b557c9cbade517317b053b41b2e53"
+    },
+    {
+      "path": "src/Contracts/ContextRestorer.php",
+      "bytes": 318,
+      "sha256": "cadf7481269007ce613a65279ad159fd8b5d96e4f42134ddd46b6b1ba11ba9ee"
+    },
+    {
+      "path": "src/Contracts/CurrentContext.php",
+      "bytes": 181,
+      "sha256": "fb9afab89eaf29e26e6e6545fdd768999e2b8abd713a73a516a52020c0c04d31"
+    },
+    {
+      "path": "src/Contracts/ImportAuthorizer.php",
+      "bytes": 748,
+      "sha256": "c4135e30aaa56d646960cd1d1e7dd5c3f0f8b7b6ffe5fb6908e36a07c94ce1f5"
+    },
+    {
+      "path": "src/Contracts/ImportTarget.php",
+      "bytes": 1130,
+      "sha256": "3610731031a8d5e8837e7539ea83603e6e8c552150c8a2bfeee5f60c358c48da"
+    },
+    {
+      "path": "src/Contracts/NotificationRecipientResolver.php",
+      "bytes": 329,
+      "sha256": "e3e7160cd586b2e97fd4fe7f9541b473a5cbaaaf2de119f7403f94f4b42f7f3e"
+    },
+    {
+      "path": "src/Contracts/OptionsProvider.php",
+      "bytes": 222,
+      "sha256": "6c657faacf2b5c10d90a5ad1bef3c6446c7f0d26a667b0d6ca5d912a6a385477"
+    },
+    {
+      "path": "src/Contracts/SourceReader.php",
+      "bytes": 469,
+      "sha256": "efbcee20dbf50f716808becb7ab831c622016c63a57ccfb672011eaba6b37b9c"
+    },
+    {
+      "path": "src/Data/BatchWriteResult.php",
+      "bytes": 448,
+      "sha256": "1abcf7e42cacece0d0ad6fee6669612ebb01fecc13a66744cbdb2a3db148ec42"
+    },
+    {
+      "path": "src/Data/FileInspection.php",
+      "bytes": 269,
+      "sha256": "0cbbc854529bf8b2225bf44d6de7431c3f2981c25801f5ce8947e4a467ad7776"
+    },
+    {
+      "path": "src/Data/ImportContext.php",
+      "bytes": 678,
+      "sha256": "f4fd1983cb061c95e6affbfdb343ecf76897db69efcbc3da244c7ab6dc5a6ea3"
+    },
+    {
+      "path": "src/Data/ResolvedReferences.php",
+      "bytes": 1039,
+      "sha256": "bb29b8f91c87735357068e83f722840f47679b30607bfd6bfe197242005cd2b5"
+    },
+    {
+      "path": "src/Data/RowFailure.php",
+      "bytes": 433,
+      "sha256": "e11b80effb2e2c45c6e82213232f0d90441ef72872f83e68a5f32b144a5931b3"
+    },
+    {
+      "path": "src/Data/SourceRow.php",
+      "bytes": 299,
+      "sha256": "ce7e83703f7f0e099942a418bc0ea73db60f9854308d4c05f9459439fcedf270"
+    },
+    {
+      "path": "src/Definitions/DataDefinition.php",
+      "bytes": 12753,
+      "sha256": "2bc10b059ae6e56e148caa3c02fedd2228cdf78a3ba775574098b0cfbc19c498"
+    },
+    {
+      "path": "src/Definitions/EloquentTarget.php",
+      "bytes": 5718,
+      "sha256": "5d87faa9a5bbbbcd447864df2b2f61b816faf14a1a531c6eed62e6dbbc1a53b6"
+    },
+    {
+      "path": "src/Definitions/ImportDefinition.php",
+      "bytes": 6177,
+      "sha256": "dd5500217667e846962ab64791da8a094ea7c3c38bdfeb10bb4d541d8c96c2aa"
+    },
+    {
+      "path": "src/Definitions/Reference.php",
+      "bytes": 1824,
+      "sha256": "30815febecf51b4b3181c9714230d9f10a25f07d2ade3c874de19e172e40c3b7"
+    },
+    {
+      "path": "src/Enums/ChunkStatus.php",
+      "bytes": 372,
+      "sha256": "b5611600ffdafddba1ca03571c2862db177d7ed5a2718366a25016ee86ea56b7"
+    },
+    {
+      "path": "src/Enums/DuplicateStrategy.php",
+      "bytes": 452,
+      "sha256": "d0f37b7a11617db9eef32e6284dffb4747778fdfc85f9fa9256c85cbcc796af6"
+    },
+    {
+      "path": "src/Enums/ExportStatus.php",
+      "bytes": 522,
+      "sha256": "3548a13ac7e5772b12c874785ffc385020da0363511648dc21a0a5fea41fe641"
+    },
+    {
+      "path": "src/Enums/FailureStage.php",
+      "bytes": 239,
+      "sha256": "33c59ac517262e7569f04f19c1583fa2717dab98b0722b65665e56c5a7f760c9"
+    },
+    {
+      "path": "src/Enums/FailureType.php",
+      "bytes": 828,
+      "sha256": "c2449304309173eb63cac02dcabdd53991264cadbe17b042d33075b5d984a5d8"
+    },
+    {
+      "path": "src/Enums/IdempotencyStrategy.php",
+      "bytes": 180,
+      "sha256": "e2fe553c2cd58ccfba56ffb209baf39f4bb85e5e5d2d1bb096afa03c465c93cf"
+    },
+    {
+      "path": "src/Enums/ImportMode.php",
+      "bytes": 129,
+      "sha256": "5374bd0c4a08a685190a93a4798616a7e760a2ea86b476db5076210c86c07d92"
+    },
+    {
+      "path": "src/Enums/ImportStatus.php",
+      "bytes": 623,
+      "sha256": "fa20ea19f9e47b1ce2d8aeff65d4dc8b9dca60e9067eb5c211cb9ac99c697f91"
+    },
+    {
+      "path": "src/Enums/OptionInput.php",
+      "bytes": 148,
+      "sha256": "f34006019f81d66984f525e09dd83b53c18042a9882742bcb49c27ec7f9ab509"
+    },
+    {
+      "path": "src/Enums/RelationMissingStrategy.php",
+      "bytes": 166,
+      "sha256": "cb86d3922ca9bcbc3894ea8a02ab326964e682d67be9566ab511a55682ca6d9c"
+    },
+    {
+      "path": "src/Events/ExportChanged.php",
+      "bytes": 264,
+      "sha256": "4b83d689690ede9038460b6c9aa166542ca1ea82dca7bd3d031f5af66629b6ef"
+    },
+    {
+      "path": "src/Events/ImportCancelled.php",
+      "bytes": 95,
+      "sha256": "9b9d248d2255e57af30dda255549d33b7acfd9f4c55605dfe7def02908ade343"
+    },
+    {
+      "path": "src/Events/ImportChunkCompleted.php",
+      "bytes": 105,
+      "sha256": "3d07111775866b4734643d47afa9b34bfa260c5dd467c0858d8575c10394d64a"
+    },
+    {
+      "path": "src/Events/ImportChunkEvent.php",
+      "bytes": 1162,
+      "sha256": "cac30718295655568d6cffd554ed128969bcf825b53ca477ac912eecae4f387d"
+    },
+    {
+      "path": "src/Events/ImportChunkFailed.php",
+      "bytes": 455,
+      "sha256": "8658a0a4c9467670304b0e10d208683d897fba911c92ea9c43a31996d9ba1e07"
+    },
+    {
+      "path": "src/Events/ImportChunkStarted.php",
+      "bytes": 103,
+      "sha256": "88b5b35045721a023c3139c0242cb153db1b28e8c0d6d75ef63f8d36be36f86e"
+    },
+    {
+      "path": "src/Events/ImportCompleted.php",
+      "bytes": 95,
+      "sha256": "73267f6cf7902a1ddc24f2270173b820b4a9c58e7d80f573f3d8d786be949e38"
+    },
+    {
+      "path": "src/Events/ImportCompletedWithErrors.php",
+      "bytes": 105,
+      "sha256": "efd487c8f1213a5c44c606d416016202c77e2e5ed05267cf4ca1de442cf217e5"
+    },
+    {
+      "path": "src/Events/ImportCreated.php",
+      "bytes": 93,
+      "sha256": "8d05b2e15e5c7c47a7f4162384c00476b18f1a8002fd06f2e40c29113bec30d9"
+    },
+    {
+      "path": "src/Events/ImportEvent.php",
+      "bytes": 935,
+      "sha256": "3f0b98a2c236666c1d3088966fc1067cfee0a70d540bb4f82dfa9029cff5a438"
+    },
+    {
+      "path": "src/Events/ImportFailed.php",
+      "bytes": 352,
+      "sha256": "deb2fa7adcbc7113ebaf1353c45c5ad535307d748656d97f912bf31a34aecd51"
+    },
+    {
+      "path": "src/Events/ImportProgressUpdated.php",
+      "bytes": 101,
+      "sha256": "bc36adbabd3a054fabea9bae05921c82013abb5f084c6efaf0af6ce7a0973f24"
+    },
+    {
+      "path": "src/Events/ImportQueued.php",
+      "bytes": 92,
+      "sha256": "0247b1b747a32325cc27280e356f69104840665ca1d7fadc5f9a561822f7dde3"
+    },
+    {
+      "path": "src/Events/ImportStarted.php",
+      "bytes": 93,
+      "sha256": "db1713c01b410b41e8562ba521b487e8d302f204427a0764f9af3368cc1bc673"
+    },
+    {
+      "path": "src/Exceptions/AtomicCommitRejected.php",
+      "bytes": 468,
+      "sha256": "79663e1832b05a0f26e3b28a114bb915a6e2c636c4a8d11dca98ac7128d6137a"
+    },
+    {
+      "path": "src/Exceptions/ChunkLeaseUnavailable.php",
+      "bytes": 133,
+      "sha256": "0ee2f411eff9599537649e2c9e89427bd032853507714223f05ed799b2041148"
+    },
+    {
+      "path": "src/Exceptions/DuplicateImportException.php",
+      "bytes": 364,
+      "sha256": "51380fb19d01015559d456abeca4e69a9287cd2bc05cdb4f9575606c25fdfad9"
+    },
+    {
+      "path": "src/Exceptions/FileValidationException.php",
+      "bytes": 337,
+      "sha256": "7f416049f352107f013e66f0de1961c571226cfc4622848c2042139fe20d316b"
+    },
+    {
+      "path": "src/Exceptions/ImportCancelledSignal.php",
+      "bytes": 133,
+      "sha256": "2a72001060e35d389b2ae0727edd13a18cb04e47f7c4d50ea8af4e939bab5833"
+    },
+    {
+      "path": "src/Exceptions/ImportConfigurationException.php",
+      "bytes": 136,
+      "sha256": "14f892cfe41ff47729f75fe8ba08829417890367beca18788b05d31c13ea6797"
+    },
+    {
+      "path": "src/Exceptions/InvalidStateTransition.php",
+      "bytes": 132,
+      "sha256": "fff5d600a44b8efdb04f3b104581e14aeac5754a77d5358f9824ac24126ef594"
+    },
+    {
+      "path": "src/Exceptions/RejectRow.php",
+      "bytes": 324,
+      "sha256": "5013fb778d91993c2dac4921473d3d1b22fe3a04a439b3112ab5ee1e9d297dcc"
+    },
+    {
+      "path": "src/Exports/ExportMapper.php",
+      "bytes": 4224,
+      "sha256": "80367c86878b3b15352c231591692f7153255f006d23ea774092e3f95756bbbf"
+    },
+    {
+      "path": "src/Exports/ExportQuery.php",
+      "bytes": 2605,
+      "sha256": "37d0b185d6650c6c4e5ce5e431bfd30932f58480aa15139282d29c291c7208db"
+    },
+    {
+      "path": "src/Exports/ExportRunner.php",
+      "bytes": 7938,
+      "sha256": "31754412f299be0558d5eeec733896175fe41736fefd110de0a5a6da49820d53"
+    },
+    {
+      "path": "src/Exports/PartStore.php",
+      "bytes": 1882,
+      "sha256": "aada68f855b70c6200872efeee63df4411f0ac672711c82ec31f92df313b2922"
+    },
+    {
+      "path": "src/Facades/BulkImport.php",
+      "bytes": 326,
+      "sha256": "f58e7b45fded71f878e59d0de7ebde199933f0579d51c6e64cf321d9534ceedd"
+    },
+    {
+      "path": "src/Fields/Field.php",
+      "bytes": 13154,
+      "sha256": "615b68dd6262cb4fc3185bc9090033c9254aa58389a2d9fdc16e3adcfbd4a2cc"
+    },
+    {
+      "path": "src/Fields/RelationField.php",
+      "bytes": 3014,
+      "sha256": "9b7d056113906ae1e662ea439a9949150e687359186c4eb097865149462a78a3"
+    },
+    {
+      "path": "src/Http/Controllers/DataController.php",
+      "bytes": 5001,
+      "sha256": "6a413ec6bdffef69028ff712942c15063add3e4e41c4f748b36685cecd47c7c0"
+    },
+    {
+      "path": "src/Http/Controllers/ImportController.php",
+      "bytes": 8628,
+      "sha256": "641b9c29a1bbf52a8ff9615d25e174c4277942072e4296daee1f772b4d20e8ca"
+    },
+    {
+      "path": "src/Http/Middleware/AuthenticateDataOperation.php",
+      "bytes": 1044,
+      "sha256": "ada6029eb49e2a3ed50f75472a9d39083cb8508fc95ae57065bdb62f0064e9cf"
+    },
+    {
+      "path": "src/Http/Middleware/RejectClientIdentity.php",
+      "bytes": 728,
+      "sha256": "edbed31c292ef77ddb8f7fcff74230ca7986d476bc2bd924e2f96d317bbd7bad"
+    },
+    {
+      "path": "src/Http/Requests/StoreImportRequest.php",
+      "bytes": 806,
+      "sha256": "adb46be5d48c52d4d2b33ea6d1524661b4c42969875ac2d2ab4031787ac677ee"
+    },
+    {
+      "path": "src/Http/Resources/ImportFailureResource.php",
+      "bytes": 907,
+      "sha256": "438cc6924c4daca4c0a5e5b959db18e9a31a4ecfe040bbc221b5f8d76c73a985"
+    },
+    {
+      "path": "src/Http/Resources/ImportResource.php",
+      "bytes": 2453,
+      "sha256": "3544ba643f567f5991a6803828e50d106cbc17bb49f66aa5994d7b58e18220d7"
+    },
+    {
+      "path": "src/Jobs/CompletionNoticeJob.php",
+      "bytes": 4121,
+      "sha256": "3c677e40644a803b94c6e3d0f0d3ad369f3883a945b4698ca641958a72cb8c00"
+    },
+    {
+      "path": "src/Jobs/FinalizeImportJob.php",
+      "bytes": 2839,
+      "sha256": "1e1686cdeaa8447415358590594ed57542f68a86732258ffeca5d35e695dcb63"
+    },
+    {
+      "path": "src/Jobs/GenerateImportErrorReportJob.php",
+      "bytes": 1372,
+      "sha256": "c636f39c0e2c0d81d32ed0c81efa89f0f5d8da58c515574bc12a31e6ed910bf3"
+    },
+    {
+      "path": "src/Jobs/PrepareImportJob.php",
+      "bytes": 3886,
+      "sha256": "c66b8fd490fedb7af53c649da0e017a99c95e8fc74e916a2fcbcc55ca20ece50"
+    },
+    {
+      "path": "src/Jobs/ProcessExportJob.php",
+      "bytes": 2424,
+      "sha256": "c47f6514ca3882401d265e69e6661a5b75c2d42ee3c711a61ac3bc629c494409"
+    },
+    {
+      "path": "src/Jobs/ProcessImportChunkJob.php",
+      "bytes": 2660,
+      "sha256": "871443bccd97a6a1c00e01c10521fcac1f3f3b5b185e905cff55d76c042ed111"
+    },
+    {
+      "path": "src/Models/Export.php",
+      "bytes": 2555,
+      "sha256": "fd88ab5e5510c011f75ed63028e53f3e067f86ba0078c753c16036588935fb2b"
+    },
+    {
+      "path": "src/Models/ExportPart.php",
+      "bytes": 500,
+      "sha256": "f8ded5597ea9ac492f6324ac02ed16567728c747a458be0f485962fc1d74537e"
+    },
+    {
+      "path": "src/Models/Import.php",
+      "bytes": 4832,
+      "sha256": "2a35808f63d838d1be710a6b8020a2c0b4ba68c121316109707088b3a00b9722"
+    },
+    {
+      "path": "src/Models/ImportChunk.php",
+      "bytes": 2939,
+      "sha256": "9161f15ffb2949d96a647b23fe940d80dc385d714815e688e44824c8d017d253"
+    },
+    {
+      "path": "src/Models/ImportFailure.php",
+      "bytes": 1676,
+      "sha256": "913aa61e84dfd6956d695cd419027a8872062cf55b5cd7ec156c6185fa5022af"
+    },
+    {
+      "path": "src/Models/ImportRowKey.php",
+      "bytes": 1035,
+      "sha256": "92196ffb8fa91b24994c9fd6b9631bac61abfcdfdd72be8f294f63cdf4a2fe54"
+    },
+    {
+      "path": "src/Models/ImportStagedRow.php",
+      "bytes": 1370,
+      "sha256": "02769fdb9212cda1cedd65f47a087663c254a07e6257d7cd507ae683e91a7e97"
+    },
+    {
+      "path": "src/Models/Concerns/UsesBulkImportConnection.php",
+      "bytes": 239,
+      "sha256": "57cde7dbeb6155cf6a58e93d62b2eeefc3d4dd540142fe78dc6c744875786169"
+    },
+    {
+      "path": "src/Notifications/CreatorRecipientResolver.php",
+      "bytes": 1478,
+      "sha256": "fd272392ec2cc199418c99e9b4b91ce30b137171c6ab4805161fe4749167188d"
+    },
+    {
+      "path": "src/Notifications/NotificationDispatcher.php",
+      "bytes": 2872,
+      "sha256": "fe6b80a5771dd1d30e9f067411f627eec92bc3b9196636d09ee77944850ffbea"
+    },
+    {
+      "path": "src/Notifications/OperationFinished.php",
+      "bytes": 1088,
+      "sha256": "4369f1c6f09981206c4806a069cacbca931e4db76a88903f5af8aef3c59fd977"
+    },
+    {
+      "path": "src/Notifications/QueueCompletionNotice.php",
+      "bytes": 682,
+      "sha256": "64af4fd9174f78ce14610cdee70f8f72bec09ea168d3b27597f518176b9c737b"
+    },
+    {
+      "path": "src/Readers/CsvReader.php",
+      "bytes": 5670,
+      "sha256": "7279dfbfb2a2b663e5790dc4e96de1c5da05272f8bc0795b59c9fa3367b2d50a"
+    },
+    {
+      "path": "src/Readers/LocalFileMaterializer.php",
+      "bytes": 1919,
+      "sha256": "415a536d92fce6809175f7fa62b0c95d81a61481f985f64296aea36f34db23f6"
+    },
+    {
+      "path": "src/Readers/ReaderRegistry.php",
+      "bytes": 979,
+      "sha256": "c227acffba0018a351858a498a0857769f6020150e1b804d44df57c410c66627"
+    },
+    {
+      "path": "src/Readers/XlsxReader.php",
+      "bytes": 6057,
+      "sha256": "1b7b44381775f469e2c5b467d0a68c313012a01d2e53aff82823c3ac915372b9"
+    },
+    {
+      "path": "src/Readers/XlsxSecurityInspector.php",
+      "bytes": 2228,
+      "sha256": "14b62a1f32fb0cf1b266257cff6ca7fec97e5514b0d0109149f4aa59a0d0fea8"
+    },
+    {
+      "path": "src/Services/ActorImportAuthorizer.php",
+      "bytes": 2741,
+      "sha256": "86c079d395f5820ff060068e7fa52afdb5f351a363f8eef9714e5c17b8fc0a0a"
+    },
+    {
+      "path": "src/Services/BusinessKeyLockManager.php",
+      "bytes": 2823,
+      "sha256": "238a977caca787d323814612eed02e974d57a127a8e7de961ce362db4bc35650"
+    },
+    {
+      "path": "src/Services/CancelImport.php",
+      "bytes": 2244,
+      "sha256": "b12f27acd46b209d6021993d5c56478d7a28899d36280d4df2d29bcc84429808"
+    },
+    {
+      "path": "src/Services/ChunkBatchDispatcher.php",
+      "bytes": 2154,
+      "sha256": "375387f03a769ccca0898d64941bd68b7387f18c35b1861e7d57bdc6069f8c53"
+    },
+    {
+      "path": "src/Services/ChunkCompletion.php",
+      "bytes": 2621,
+      "sha256": "55284559f4622d82a41d79672bff7edeb451dde75ef2d25ab6cdcbed5e3018e5"
+    },
+    {
+      "path": "src/Services/ChunkFileStore.php",
+      "bytes": 3294,
+      "sha256": "54732708e64b15b657c208a89a109275fa8ed0392195c082475d66ffff9890b1"
+    },
+    {
+      "path": "src/Services/ChunkLeaseManager.php",
+      "bytes": 2745,
+      "sha256": "051bd226a3aed2798da0b3f7b22ab2468c272e7f0535a8a002359a3f902b0a18"
+    },
+    {
+      "path": "src/Services/ChunkProcessor.php",
+      "bytes": 19479,
+      "sha256": "ce459fcc327fecb167dcd79a31d376c6a0542e07be8b069e72f3b3e647f5a5eb"
+    },
+    {
+      "path": "src/Services/ConnectionGuard.php",
+      "bytes": 930,
+      "sha256": "ec888cb0c7418f26d872f80d6ac1eb3f8a9cd92d874dc3354789d90e2fedd39e"
+    },
+    {
+      "path": "src/Services/ContextNormalizer.php",
+      "bytes": 1540,
+      "sha256": "1e324efc8d05003feb91cacde3a0c84784a8b7f177ebc7f90afed5eb9ca85f52"
+    },
+    {
+      "path": "src/Services/DataAccess.php",
+      "bytes": 2707,
+      "sha256": "0edf66a9abacacdc8d68e4221c0a7573839b36d909c84cb218d1807118151063"
+    },
+    {
+      "path": "src/Services/DataDescription.php",
+      "bytes": 1925,
+      "sha256": "b30f63514d603d96abf683a866f5f295060a081c359ea7cf2517c1e01aea2410"
+    },
+    {
+      "path": "src/Services/EloquentAtomicCommitter.php",
+      "bytes": 4769,
+      "sha256": "924a5e7a4cf188ddb3b3304d9c82ac4ddf16064ed650042d9728988f50880345"
+    },
+    {
+      "path": "src/Services/EmptyCurrentContext.php",
+      "bytes": 221,
+      "sha256": "c6f3e27d0d0544050c5b140068aff5cf0628ad0a0b691561b517c760e4e82181"
+    },
+    {
+      "path": "src/Services/ErrorReportDispatcher.php",
+      "bytes": 695,
+      "sha256": "45b530db8e828151c79d56406797ea83102e41ae8ca67b2497ad935eb6c96cb7"
+    },
+    {
+      "path": "src/Services/ErrorReportGenerator.php",
+      "bytes": 2833,
+      "sha256": "fd5421d9e4e680f7437fbc334700c4ea39c796addcdbdd162eea3e119457f4c6"
+    },
+    {
+      "path": "src/Services/FailureRedactor.php",
+      "bytes": 1443,
+      "sha256": "c02e9261030d0f905ecf2847ed3201be34c9f337712d44587b893d3fbb1dbffc"
+    },
+    {
+      "path": "src/Services/FilePreflightValidator.php",
+      "bytes": 1640,
+      "sha256": "41d673ca525f6ec966d6c6c097b6df0c3c703e7c35bcf25f0d29552ccd0fe767"
+    },
+    {
+      "path": "src/Services/FinalizeImport.php",
+      "bytes": 7946,
+      "sha256": "f96e42be720a2a28ed66b74a3f54f0d0050ddb72f39cca0d8d78c4b8ca7616f4"
+    },
+    {
+      "path": "src/Services/ImportDefinitionRegistry.php",
+      "bytes": 1727,
+      "sha256": "31ffa6cce46df0fc5139f55bb7d79ab7244a54b6d72dd76ad185bea864bad325"
+    },
+    {
+      "path": "src/Services/ImportDispatcher.php",
+      "bytes": 11924,
+      "sha256": "5f94f79eca1c70f89f872e00dffd57bdd5109ccad58ed3fd1ac4dc651efd63b2"
+    },
+    {
+      "path": "src/Services/ImportFingerprint.php",
+      "bytes": 967,
+      "sha256": "8083a852229798d3faf185017f06383a746cc7fedcc86414ec834e2dabb45bff"
+    },
+    {
+      "path": "src/Services/ImportLeaseManager.php",
+      "bytes": 4784,
+      "sha256": "3cdfb98609d04d2be0690d996f11b80dba1b543440aea691a1f3c6acaedf5095"
+    },
+    {
+      "path": "src/Services/NullContextRestorer.php",
+      "bytes": 278,
+      "sha256": "8aa6af865e6bc4cd22fdc6e7b488a17ae5b91fdffc4500b0bf3a085e68b7de8e"
+    },
+    {
+      "path": "src/Services/PrepareImport.php",
+      "bytes": 16089,
+      "sha256": "4c9756da6203676e9acc2b5b061e454cf319d79a18fa20d53c17474d0b4caafe"
+    },
+    {
+      "path": "src/Services/ReferenceResolver.php",
+      "bytes": 2355,
+      "sha256": "581a0d4bccabae79be1e20293d4988a687ddb5fa5b1e0627a1fdf6295ace9322"
+    },
+    {
+      "path": "src/Services/RetryImport.php",
+      "bytes": 3929,
+      "sha256": "54198f7f088cc7030fb30ccf6ba3671745dd89da92742f283bb8d7ea0d57f6c7"
+    },
+    {
+      "path": "src/Services/RowFailureRecorder.php",
+      "bytes": 2480,
+      "sha256": "0a0e21cb73c46b6748fa2d767b6cc07f75c5d9bcdb303b74b2421234ec6d6c5c"
+    },
+    {
+      "path": "src/Services/StoredFileIntegrityVerifier.php",
+      "bytes": 960,
+      "sha256": "b76d22f544ba2a6efa4938865cef316602d9ac9b0be5efcb418752e0030d2b29"
+    },
+    {
+      "path": "src/State/ChunkStateMachine.php",
+      "bytes": 810,
+      "sha256": "daa2cec593120434a7d879d1f7a6d5d8a7df94a2c4f2c771010c1271f7a8053d"
+    },
+    {
+      "path": "src/State/ImportStateMachine.php",
+      "bytes": 2077,
+      "sha256": "20966b01f65806b90041cb457bc9e1f0e1b42ea44a3c2ac5e5741a3cf507f9cf"
+    },
+    {
+      "path": "src/Support/BusinessKey.php",
+      "bytes": 626,
+      "sha256": "c707cd341692144b81932becedbfc7b744827116a7476058f80ff698ff432f37"
+    },
+    {
+      "path": "src/Support/CanonicalJson.php",
+      "bytes": 750,
+      "sha256": "bbfffe7ebdb0c605858e7a948d9111cd30829c357434fb4105b04cba51328e4b"
+    },
+    {
+      "path": "src/Support/Header.php",
+      "bytes": 267,
+      "sha256": "f4cc06db8f6b5d5da57f5e0f1cad55fe9187b133f8e6182405ae27ec27a669b6"
+    },
+    {
+      "path": "src/Templates/TemplateWriter.php",
+      "bytes": 9424,
+      "sha256": "2c55bcab4c5c3400924071ba8a8839d073ebb38a04078f6f4590e03f3abe0b12"
+    },
+    {
+      "path": "src/Writers/SpreadsheetWriter.php",
+      "bytes": 3043,
+      "sha256": "2e9de57ed4c5545ea6d53c744428899ea378d3c6852e5ca6e0f4d154d5c286ae"
+    },
+    {
+      "path": "tests/TestCase.php",
+      "bytes": 4730,
+      "sha256": "5ce82c2f1d66c32cad5e6fbfd9b9c17c6487c368b8590f5caf9ada20375a0e22"
+    },
+    {
+      "path": "tests/Enterprise/ConcurrentWorkersTest.php",
+      "bytes": 5580,
+      "sha256": "f36450e0fb25cb2bcf144c2a6ecc79bc50225ef1ba30aba9bd7655cb110e8e25"
+    },
+    {
+      "path": "tests/Enterprise/EnterpriseTestCase.php",
+      "bytes": 2158,
+      "sha256": "a77f25c9a6f523e15c45e95c837606ffc493154a18e7c98e20409822472b3fec"
+    },
+    {
+      "path": "tests/Enterprise/MetadataEngineTest.php",
+      "bytes": 8936,
+      "sha256": "a8e5a20d0e9c09f8711f8a59104f84d1016b4d7f1cf9b308c5c1081550ad3f51"
+    },
+    {
+      "path": "tests/Enterprise/OwnershipAndNotificationsTest.php",
+      "bytes": 22102,
+      "sha256": "42044ce5f6f5411a0cdc853c8031c779b236eec48bd805dc6a9b399023870a9f"
+    },
+    {
+      "path": "tests/Enterprise/TenantAccessTest.php",
+      "bytes": 5268,
+      "sha256": "8bfa09a87e74377e4f9cbf62ba6465d16734f7a390bffffe55224192221420c7"
+    },
+    {
+      "path": "tests/Feature/AtomicStudentsImportTest.php",
+      "bytes": 3712,
+      "sha256": "d41e020c3236495b47fc7bcc461c42146caa3d5d7c8667d4cce1e8f4c45e64c4"
+    },
+    {
+      "path": "tests/Feature/CancellationAndAuthorizationTest.php",
+      "bytes": 1603,
+      "sha256": "dc6dc1c0da72756eb4a9fb96db143cbc5dabed6fc6ea1e074c5374ca06836d92"
+    },
+    {
+      "path": "tests/Feature/ChunkRetryTest.php",
+      "bytes": 2747,
+      "sha256": "98ba7e37f5aa7e9ad6f3f40c818250422aed6e825998c3ea7e9adfa76a20f7ee"
+    },
+    {
+      "path": "tests/Feature/CleanupCommandTest.php",
+      "bytes": 2777,
+      "sha256": "b28e576d4ba63ae847c513e658d0badc4c61b4863247bd2c22f630bf41ce5ffa"
+    },
+    {
+      "path": "tests/Feature/DuplicateStrategyTest.php",
+      "bytes": 3977,
+      "sha256": "881700d9fb655f8079008652c4853a17d3e1ff4c8cf8bacb15e4c7aca3a91f27"
+    },
+    {
+      "path": "tests/Feature/ErrorReportSecurityTest.php",
+      "bytes": 1836,
+      "sha256": "607cd0a4a5f4a72b95a7a588f68dd865280c211358863303aac263c02823309c"
+    },
+    {
+      "path": "tests/Feature/HeaderValidationTest.php",
+      "bytes": 3363,
+      "sha256": "a230e8d6719c13dbd04836a31878cc8463c589c622ca5561704e7849a497202f"
+    },
+    {
+      "path": "tests/Feature/ImportCreationTest.php",
+      "bytes": 4593,
+      "sha256": "cbe418e9962d12623ac89c91cb4fc8672cee3e83968e1a62ca2bc1726876ba35"
+    },
+    {
+      "path": "tests/Feature/MultiTenantTargetKeyTest.php",
+      "bytes": 1287,
+      "sha256": "659a8fd864e4dd2825616a7864c93ad7bcc067538ffa905e644cdc8516b69c9a"
+    },
+    {
+      "path": "tests/Feature/PartialStudentsImportTest.php",
+      "bytes": 2679,
+      "sha256": "73dfda687bb763c2fbcc9cc43574d33a63ea5d298f131b118686a7f626a522e5"
+    },
+    {
+      "path": "tests/Feature/ReferenceQueryOptimizationTest.php",
+      "bytes": 1338,
+      "sha256": "863c319104cca72e67e517667cb0a607c53f74d44c8d60c0903c9081ab8aa257"
+    },
+    {
+      "path": "tests/Feature/XlsxStudentsImportTest.php",
+      "bytes": 3093,
+      "sha256": "723cce9b79e4a3481ccfafa1e128dc35b707aced0853894c2c589eb4dd78187c"
+    },
+    {
+      "path": "tests/Large/FiftyThousandStudentsTest.php",
+      "bytes": 2645,
+      "sha256": "e457d7325a9f19078ed6bfcaf4fbec4407322d5cedf7e43ab7881e7f96bea692"
+    },
+    {
+      "path": "tests/Support/AtomicErrorStudentsImport.php",
+      "bytes": 683,
+      "sha256": "03fb7a2081bd3fde5f3e3732e969d0989670757a5a6c6d528c22ea64cf9a4ee6"
+    },
+    {
+      "path": "tests/Support/ConcurrentWorker.php",
+      "bytes": 2955,
+      "sha256": "8cbeb832e63c01700f4c2dfb82caf7d6246ceb1b9b708a6447d03838d54c470d"
+    },
+    {
+      "path": "tests/Support/ErrorOnDuplicateStudentsImport.php",
+      "bytes": 336,
+      "sha256": "fb4da61c96c597be506677e181024a8adfdb23c8478c16947eeb933c857a0fbe"
+    },
+    {
+      "path": "tests/Support/FlakyStudentsImport.php",
+      "bytes": 637,
+      "sha256": "5adf6131238df9a4417496e84d87b2324089de0b95606f9f55e1affd55c87ec0"
+    },
+    {
+      "path": "tests/Support/SkipStudentsImport.php",
+      "bytes": 323,
+      "sha256": "d89c7718604321910815eae7d1aac46ea6bf4c018da00a20324725dc6e1f30c1"
+    },
+    {
+      "path": "tests/Support/TenantStudent.php",
+      "bytes": 265,
+      "sha256": "feebefbce0b09b0decca4bb4311102f257b184fa69fe8dc5e2172809c6e57910"
+    },
+    {
+      "path": "tests/Support/TenantStudentsImport.php",
+      "bytes": 1280,
+      "sha256": "ad8f13aff8940ad6773072eafc220c6a6fff46b480050933ec02a172b7df6787"
+    },
+    {
+      "path": "tests/Support/TestUser.php",
+      "bytes": 281,
+      "sha256": "299ae823046a84318a6c7f525d1603fc2a10c0aae03a8be263509e4b708c191b"
+    },
+    {
+      "path": "tests/Support/UpdateStudentsImport.php",
+      "bytes": 327,
+      "sha256": "25d44c649411c951a5b3a40124cd26c472b55677b378dadf8fc0834786c2d76c"
+    },
+    {
+      "path": "tests/Unit/BusinessKeyTest.php",
+      "bytes": 654,
+      "sha256": "6bb0dd633e3ca58c1e0db470424fac7e3414e8c96bf66142a2521c2eb3e8583b"
+    },
+    {
+      "path": "tests/Unit/ChunkCompletionTest.php",
+      "bytes": 2475,
+      "sha256": "3365bff729d8665afda6be74e5ce818879336b8bd8236dd82732fd6e707dee9a"
+    },
+    {
+      "path": "tests/Unit/ChunkLeaseManagerTest.php",
+      "bytes": 4634,
+      "sha256": "ba9027ba6bd6435c4a549fcb56606d5217f44d45172177cfcd4fad8b2ef4df46"
+    },
+    {
+      "path": "tests/Unit/ChunkStateMachineTest.php",
+      "bytes": 871,
+      "sha256": "43e6a3094668ecddf7325d1871581122f2068b6868965ff8062fa1c3cd246b50"
+    },
+    {
+      "path": "tests/Unit/ContextNormalizerTest.php",
+      "bytes": 959,
+      "sha256": "18c003c79d515ed74794b5e3d7c620afcad4be29b3bcf0ea2221b436dbe766dd"
+    },
+    {
+      "path": "tests/Unit/CsvReaderTest.php",
+      "bytes": 784,
+      "sha256": "7626edb9bc745c89ea971528b1bcd27d5db9a4139a8211e5cb388300bfe5a605"
+    },
+    {
+      "path": "tests/Unit/FailureRedactorTest.php",
+      "bytes": 1114,
+      "sha256": "32f49f42f24efacf49d53cca360b692ec122e6497f55fe6c39831156df95d658"
+    },
+    {
+      "path": "tests/Unit/ImportStateMachineTest.php",
+      "bytes": 2028,
+      "sha256": "6a9e8a5de88137b4b4da7af60f2cf6368d72749d085ca280a123eeb22db937c5"
+    },
+    {
+      "path": "tools/package.py",
+      "bytes": 2647,
+      "sha256": "544e0fa951a3e5d7afac8cbc97fba3c3ea64f0e87f5e8cf9c264f07936b1461b"
+    },
+    {
+      "path": "verification/LATEST-CHECKPOINT.md",
+      "bytes": 541,
+      "sha256": "069d6681d93f7f2c72c004fedd0921941a65265b8e769ff68fa6b57ed495ddb2"
+    },
+    {
+      "path": "verification/LICENSING.md",
+      "bytes": 2217,
+      "sha256": "ff195187beba2122e4d7bcf1ae5cb8fd4ae1a80516f1ea56eff8d9350776f41f"
+    },
+    {
+      "path": "verification/RECOVERY.md",
+      "bytes": 946,
+      "sha256": "c5adb27920156e2a45b0c49adf53820f38c66ee7a4d72e913a303724a4e04e68"
+    },
+    {
+      "path": "verification/composer.log",
+      "bytes": 25,
+      "sha256": "43add299dc97ecbd90ec2dc456ef5a0bd824bb9abdae2a3d7cdb520e21f8e86d"
+    },
+    {
+      "path": "verification/documentation-audit.json",
+      "bytes": 620,
+      "sha256": "2b99b657ff33ff282cb6e2530976c417899b9a0acf8f4daab7ec18b1b7672f34"
+    },
+    {
+      "path": "verification/files-changed.txt",
+      "bytes": 2773,
+      "sha256": "9a6489aa6f15517846ad76d7acdcd34a64ffd52960e80491c086516aa77054d5"
+    },
+    {
+      "path": "verification/format-applied.log",
+      "bytes": 335,
+      "sha256": "ff556507d992605ae815f69e5d1320b6b0bfaa0a54fc2d2d1d62100ce5986ffb"
+    },
+    {
+      "path": "verification/format-check.log",
+      "bytes": 33,
+      "sha256": "cd1a94fc2cf6a965b86e1a4809d6c7fb9148b1ee374e1010ed2ac96ff4876ec2"
+    },
+    {
+      "path": "verification/git-status.txt",
+      "bytes": 153720,
+      "sha256": "26dbac3143c110947cde823accd3e878a6562c0b6aa9c0d6d00711afc83b6671"
+    },
+    {
+      "path": "verification/licensing-composer.log",
+      "bytes": 25,
+      "sha256": "43add299dc97ecbd90ec2dc456ef5a0bd824bb9abdae2a3d7cdb520e21f8e86d"
+    },
+    {
+      "path": "verification/licensing-pint.log",
+      "bytes": 33,
+      "sha256": "cd1a94fc2cf6a965b86e1a4809d6c7fb9148b1ee374e1010ed2ac96ff4876ec2"
+    },
+    {
+      "path": "verification/phpstan.log",
+      "bytes": 179,
+      "sha256": "594040221b1e40e579ee2aed2b0aad68154353f04eb4b0520c5f7d9b707a22a8"
+    },
+    {
+      "path": "verification/phpunit.xml",
+      "bytes": 36623,
+      "sha256": "788ddfeef6871376adb33735a46711accc34d12a4de8211034c8d5a5072a1f1c"
+    },
+    {
+      "path": "verification/release-checks.json",
+      "bytes": 337,
+      "sha256": "dce982335123202f9c60ef44999aa85ec33c42a4730b7901ffd968a47358d780"
+    },
+    {
+      "path": "verification/tests-initial-attempt.log",
+      "bytes": 5866,
+      "sha256": "34c61f12190ddcfd5d1e76afecc9e97a5308e1f5bea98db8a3e5d0a5aa4e18a1"
+    },
+    {
+      "path": "verification/tests.log",
+      "bytes": 390,
+      "sha256": "78276154ef776ed296361f50736e600c2aef0c8fd00c7359ebc7bc6762df38a4"
+    }
+  ]
+}

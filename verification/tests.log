@@ -1,0 +1,11 @@
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.25
+Configuration: /workspace/scratch/1055b48473cb/async-bulk-imports/phpunit.xml
+
+................................................................. 65 / 81 ( 80%)
+................                                                  81 / 81 (100%)
+
+Time: 00:06.237, Memory: 90.50 MB
+
+OK (81 tests, 333 assertions)

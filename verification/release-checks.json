@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-06",
+  "normal_tests": 81,
+  "assertions": 333,
+  "test_exit_code": 0,
+  "phpstan_level": 5,
+  "phpstan_exit_code": 0,
+  "pint_exit_code": 0,
+  "composer_validate_strict_exit_code": 0,
+  "normal_source_methods": 81,
+  "junit_methods_verified": 81,
+  "performance_group_excluded": true,
+  "benchmarks_rerun": false
+}

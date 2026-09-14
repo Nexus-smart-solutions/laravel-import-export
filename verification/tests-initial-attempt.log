@@ -1,0 +1,79 @@
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.25
+Configuration: /workspace/scratch/1055b48473cb/async-bulk-imports/phpunit.xml
+
+..F.............................................................. 65 / 81 ( 80%)
+................                                                  81 / 81 (100%)
+
+Time: 00:06.081, Memory: 92.50 MB
+
+There was 1 failure:
+
+1) Nexus\ImportExport\Tests\Enterprise\ConcurrentWorkersTest::test_independent_distinct_chunks_increment_shared_progress_once_each
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.25
+Configuration: /workspace/scratch/1055b48473cb/async-bulk-imports/phpunit.xml
+
+Time: 00:00.111, Memory: 32.00 MB
+
+There was 1 error:
+
+1) Nexus\ImportExport\Tests\Support\ConcurrentWorker::test_process_one_delivery
+Illuminate\Database\QueryException: SQLSTATE[HY000]: General error: 5 database is locked (Connection: testing, Database: /tmp/engine-workers-gi9p95unbpa32K8rLa4, SQL: insert into "import_key_locks" ("created_at", "key_hash", "owner_import_id", "scope_hash") values (2026-09-06 10:24:16, 575b78b9f59678a68ef1a7e4e58ba263669a90570f3de01ba4f3e947f193556e, 01m1v3ymdv1c2dyfewk4madgrf, cc933832a307adcf616ccf3c1c53ddefe063e7b696ec52429ac33143f06cdd06))
+
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:838
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:573
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:537
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4121
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/BusinessKeyLockManager.php:40
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/ChunkProcessor.php:366
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/ChunkProcessor.php:157
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Concerns/ManagesTransactions.php:35
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/ChunkProcessor.php:134
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Jobs/ProcessImportChunkJob.php:57
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/NullContextRestorer.php:12
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Jobs/ProcessImportChunkJob.php:48
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:36
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/Util.php:43
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:96
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:35
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/Container.php:799
+/workspace/scratch/1055b48473cb/async-bulk-imports/tests/Support/ConcurrentWorker.php:45
+
+Caused by
+PDOException: SQLSTATE[HY000]: General error: 5 database is locked
+
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:584
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:827
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:573
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Connection.php:537
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4121
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/BusinessKeyLockManager.php:40
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/ChunkProcessor.php:366
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/ChunkProcessor.php:157
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Database/Concerns/ManagesTransactions.php:35
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/ChunkProcessor.php:134
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Jobs/ProcessImportChunkJob.php:57
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Services/NullContextRestorer.php:12
+/workspace/scratch/1055b48473cb/async-bulk-imports/src/Jobs/ProcessImportChunkJob.php:48
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:36
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/Util.php:43
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:96
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:35
+/workspace/scratch/1055b48473cb/async-bulk-imports/vendor/laravel/framework/src/Illuminate/Container/Container.php:799
+/workspace/scratch/1055b48473cb/async-bulk-imports/tests/Support/ConcurrentWorker.php:45
+
+ERRORS!
+Tests: 1, Assertions: 0, Errors: 1.
+
+Failed asserting that false is true.
+
+/workspace/scratch/1055b48473cb/async-bulk-imports/tests/Enterprise/ConcurrentWorkersTest.php:46
+/workspace/scratch/1055b48473cb/async-bulk-imports/tests/Enterprise/ConcurrentWorkersTest.php:100
+
+FAILURES!
+Tests: 81, Assertions: 326, Failures: 1.

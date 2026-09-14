@@ -1,0 +1,1 @@
+{"tool":"pint","result":"fixed","files":[{"path":"tests\/Enterprise\/ConcurrentWorkersTest.php","fixers":["method_argument_space","unary_operator_spaces","not_operator_with_successor_space"]},{"path":"tests\/Support\/ConcurrentWorker.php","fixers":["integer_literal_case","unary_operator_spaces","not_operator_with_successor_space"]}]}
